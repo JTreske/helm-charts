@@ -8,3 +8,5 @@ dependencies:
   - name: common
     version: 4.3.0
     repository: https://bjw-s-labs.github.io/helm-charts/
+maintainers:
+  - name: JTreske

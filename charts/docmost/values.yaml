@@ -1,0 +1,244 @@
+# * For documentation of the values have a look at [bjw-s-labs common helm chart](https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml)
+
+### USER SECTION START ###
+# ! change the following value
+# * use `pwgen -s 40 1` to generate `DB_PASSWORD`
+DB_PASSWORD: "super-secret-password"
+
+# ! change the following value
+DOMAIN: docmost.local
+# ! change the following value
+APP_URL: https://docmost.local
+
+# ! change the following value
+# * use `pwgen -s 70 1` to generate `APP_SECRET`
+APP_SECRET: replace-with-long-secret
+
+# ! configure mail settings as needed
+MAIL_DRIVER: smtp
+SMTP_HOST: smtp.gmail.com
+SMTP_PORT: 465
+SMTP_USERNAME: replace-with-smtp-username
+SMTP_PASSWORD: replace-with-smtp-password
+SMTP_SECURE: true
+MAIL_FROM_ADDRESS: replace-with-mail-address
+MAIL_FROM_NAME: Docmost
+
+DB_HOSTNAME: "{{ .Release.Name }}-database-cluster-rw"
+DB_NAME: "docmost"
+DB_USER: "docmost"
+
+FILE_UPLOAD_LIMIT: 100mb
+FILE_IMPORT_SIZE_LIMIT: 200mb
+STORAGE_DRIVER: local
+DISABLE_TELEMETRY: true
+### USER SECTION END ###
+
+# Configuration of the main docmost deployment
+docmost:
+  enabled: true
+
+  global:
+    nameOverride: server
+
+  controllers:
+    main:
+      type: deployment
+      strategy: RollingUpdate
+      replicas: 1
+      containers:
+        main:
+          image:
+            repository: docmost/docmost
+            tag: "0.23.2"
+            pullPolicy: IfNotPresent
+          env:
+            DISABLE_TELEMETRY: "{{ .Values.DISABLE_TELEMETRY }}"
+            REDIS_URL: redis://{{ .Release.Name }}:6379
+            FILE_UPLOAD_LIMIT: "{{ .Values.FILE_UPLOAD_LIMIT }}"
+            FILE_IMPORT_SIZE_LIMIT: "{{ .Values.FILE_IMPORT_SIZE_LIMIT }}"
+            STORAGE_DRIVER: "{{ .Values.STORAGE_DRIVER }}"
+            MAIL_DRIVER: "{{ .Values.MAIL_DRIVER }}"
+            SMTP_HOST: "{{ .Values.SMTP_HOST }}"
+            SMTP_PORT: "{{ .Values.SMTP_PORT }}"
+            SMTP_PASSWORD:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-smtp-password"
+                  key: SMTP_PASSWORD
+            SMTP_SECURE: "{{ .Values.SMTP_SECURE }}"
+            MAIL_FROM_ADDRESS: "{{ .Values.MAIL_FROM_ADDRESS }}"
+            MAIL_FROM_NAME: "{{ .Values.MAIL_FROM_NAME }}"
+            APP_SECRET:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-app-secret"
+                  key: APP_SECRET
+            DATABASE_URL:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-database-url"
+                  key: DATABASE_URL
+            APP_URL: "{{ .Values.APP_URL }}"
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          # probes:
+          #   liveness:
+          #   readiness:
+          #   startup:
+          # ! set the following value as needed
+          resources: {}
+
+  secrets:
+    app-secret:
+      enabled: true
+      stringData:
+        APP_SECRET: "{{ .Values.APP_SECRET }}"
+
+    database-url:
+      enabled: true
+      stringData:
+        DATABASE_URL: postgresql://{{ .Values.DB_USER }}:{{ .Values.DB_PASSWORD }}@{{ .Values.DB_HOSTNAME }}:5432/{{ .Values.DB_NAME }}?schema=public
+
+    smtp-password:
+      enabled: true
+      stringData:
+        SMTP_PASSWORD: "{{ .Values.SMTP_PASSWORD }}"
+
+  service:
+    main:
+      enabled: true
+      controller: main
+      primary: true
+      type: ClusterIP
+      ports:
+        http:
+          enabled: true
+          primary: true
+          port: 3000
+          targetPort: http
+          protocol: HTTP
+
+  ingress:
+    main:
+      enabled: true
+      # ! add additional proxy annotations
+      # annotations:
+      ### nginx.ingress.kubernetes.io/proxy-body-size: "{{ .Values.FILE_IMPORT_SIZE_LIMIT }}M"
+      # ! set `className` if not the default ingress class should be used
+      # className: ingress-class-name
+      hosts:
+        - host: "{{ .Values.DOMAIN }}"
+          paths:
+            - path: "/"
+              service:
+                identifier: main
+      tls:
+        - secreetName: "{{ .Release.Name }}-cert"
+          hosts:
+            - "{{ .Values.DOMAIN }}"
+
+  persistence:
+    data:
+      enabled: true
+      existingClaim: "{{ .Release.Name }}-data-pvc"
+      advancedMounts:
+        main:
+          main:
+            - path: /app/data/storage
+              readOnly: false
+
+valkey:
+  enabled: true
+
+  global:
+    nameOverride: valkey
+
+  controllers:
+    main:
+      type: deployment
+      strategy: Recreate
+      replicas: 1
+      containers:
+        main:
+          image:
+            repository: valkey/valkey
+            tag: "9.0-alpine"
+            pullPolicy: IfNotPresent
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          probes:
+            liveness:
+              enabled: true
+              custom: true
+              spec:
+                exec:
+                  command:
+                    - sh
+                    - -c
+                    - "valkey-cli ping | grep PONG"
+                initialDelaySeconds: 30
+                periodSeconds: 10
+                timeoutSeconds: 5
+                failureThreshold: 3
+            readiness:
+              enabled: true
+              custom: true
+              spec:
+                exec:
+                  command:
+                    - sh
+                    - -c
+                    - "valkey-cli ping | grep PONG"
+                initialDelaySeconds: 5
+                periodSeconds: 10
+                timeoutSeconds: 5
+                failureThreshold: 3
+            startup:
+              enabled: true
+              custom: true
+              spec:
+                exec:
+                  command:
+                    - sh
+                    - -c
+                    - "valkey-cli ping | grep PONG"
+                initialDelaySeconds: 0
+                periodSeconds: 10
+                timeoutSeconds: 5
+                failureThreshold: 30
+          # ! set the following value as needed
+          resources: {}
+
+  service:
+    main:
+      enabled: true
+      controller: main
+      primary: true
+      type: ClusterIP
+      ports:
+        redis:
+          enabled: true
+          primary: true
+          port: 6379
+          targetPort: redis
+          protocol: TCP
+        http:
+          enabled: false
+
+  persistence:
+    data:
+      enabled: true
+      size: 1Gi
+      # Optional: Set this to persistentVolumeClaim to keep redis data persistent
+      type: emptyDir
+      accessMode: ReadWriteOnce
+      # ! set `storageClass` if not the default provider should be used
+      # storageClass: storage-provider-name
+###
+# ! the PostgreSQL cluster should be created using the [cnpg](https://cloudnative-pg.github.io/charts) cluster chart
+# ! additionally to the cluster chart a secret for the cluster user is needed (not for this chart but for cnpg/cluster)

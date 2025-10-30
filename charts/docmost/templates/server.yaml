@@ -1,0 +1,37 @@
+{{- include "bjw-s.common.loader.init" . }}
+
+{{- define "server.hardcodedValues" -}}
+# Set the nameOverride based on the release name if no override has been set
+{{ if not .Values.docmost.global.nameOverride }}
+global:
+  nameOverride: "{{ .Release.Name }}"
+{{ else }}
+controllers:
+  main:
+    containers:
+      main:
+        env:
+          REDIS_URL: redis://{{ .Release.Name }}-{{ .Values.valkey.global.nameOverride }}:6379
+          APP_SECRET:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride}}-app-secret"
+          DATABASE_URL:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride}}-database-url"
+          SMTP_PASSWORD:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride}}-smtp-password"
+{{ end }}
+{{- end -}}
+
+{{- $ctx := deepCopy . -}}
+{{- $_ := get .Values "docmost" | mergeOverwrite $ctx.Values -}}
+{{- $_ = mergeOverwrite $ctx.Values (include "server.hardcodedValues" . | fromYaml) -}}
+
+{{/* Render the templates */}}
+{{ if .Values.docmost.enabled }}
+{{ include "bjw-s.common.loader.generate" $ctx }}
+{{ end }}

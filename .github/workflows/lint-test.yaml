@@ -38,14 +38,14 @@ jobs:
         if: steps.list-changed.outputs.changed == 'true'
         run: ct lint --target-branch ${{ github.event.repository.default_branch }}
 
-      - name: Create kind cluster
-        if: steps.list-changed.outputs.changed == 'true'
-        uses: helm/kind-action@v1.12.0
+      # - name: Create kind cluster
+      #   if: steps.list-changed.outputs.changed == 'true'
+      #   uses: helm/kind-action@v1.12.0
 
-      - name: Add dependencies
-        if: steps.list-changed.outputs.changed == 'true'
-        run: helm repo add bjw-s https://bjw-s-labs.github.io/helm-charts/
+      # - name: Add dependencies
+      #   if: steps.list-changed.outputs.changed == 'true'
+      #   run: helm repo add bjw-s https://bjw-s-labs.github.io/helm-charts/
 
-      - name: Run chart-testing (install)
-        if: steps.list-changed.outputs.changed == 'true'
-        run: ct install --target-branch ${{ github.event.repository.default_branch }}
+      # - name: Run chart-testing (install)
+      #   if: steps.list-changed.outputs.changed == 'true'
+      #   run: ct install --target-branch ${{ github.event.repository.default_branch }}

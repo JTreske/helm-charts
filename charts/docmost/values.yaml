@@ -127,6 +127,9 @@ docmost:
       # ! add additional proxy annotations
       # annotations:
       ### nginx.ingress.kubernetes.io/proxy-body-size: "{{ .Values.FILE_IMPORT_SIZE_LIMIT }}M"
+      # sample annotations for adequate timeout values to support websockets
+      ### nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      ### nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
       # ! set `className` if not the default ingress class should be used
       # className: ingress-class-name
       hosts:

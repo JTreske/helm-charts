@@ -3,6 +3,22 @@ entries:
   docmost:
   - apiVersion: v2
     appVersion: 0.23.2
+    created: "2025-11-01T13:45:40.920283471Z"
+    dependencies:
+    - name: common
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.3.0
+    description: Docmost is an open-source collaborative wiki and documentation software.
+    digest: 4aa2587b1aeff0fce3d9383138ec3a350814f6b3a59e9c1b9c61744abf8d09cd
+    maintainers:
+    - name: JTreske
+    name: docmost
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/docmost-0.1.1/docmost-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
+    appVersion: 0.23.2
     created: "2025-10-30T23:29:56.288581218Z"
     dependencies:
     - name: common
@@ -17,4 +33,4 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/docmost-0.1.0/docmost-0.1.0.tgz
     version: 0.1.0
-generated: "2025-10-30T23:29:56.28859256Z"
+generated: "2025-11-01T13:45:40.920297237Z"

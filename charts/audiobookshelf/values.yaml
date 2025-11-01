@@ -1,0 +1,114 @@
+# * For documentation of the values have a look at [bjw-s-labs common helm chart](https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml)
+
+### USER SECTION START ###
+# ! change the following value
+DOMAIN: audiobookshelf.local
+### USER SECTION END ###
+
+# Configuration of the main audiobookshelf deployment
+audiobookshelf:
+  enabled: true
+
+  global:
+    nameOverride: server
+
+  controllers:
+    main:
+      type: deployment
+      strategy: RollingUpdate
+      replicas: 1
+      containers:
+        main:
+          image:
+            repository: ghcr.io/advplyr/audiobookshelf
+            tag: "2.30.0"
+            pullPolicy: IfNotPresent
+          env:
+            TZ: Europe/Berlin
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          # probes:
+          #   liveness:
+          #   readiness:
+          #   startup:
+          # ! set the following value as needed
+          resources: {}
+
+  service:
+    main:
+      enabled: true
+      controller: main
+      primary: true
+      type: ClusterIP
+      ports:
+        http:
+          enabled: true
+          primary: true
+          port: 80
+          targetPort: http
+          protocol: HTTP
+
+  ingress:
+    main:
+      enabled: true
+      # ! add additional proxy annotations
+      # annotations:
+      # sample annotations for adequate timeout values to support websockets
+      ### nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      ### nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      # ! set `className` if not the default ingress class should be used
+      # className: ingress-class-name
+      hosts:
+        - host: "{{ .Values.DOMAIN }}"
+          paths:
+            - path: "/"
+              service:
+                identifier: main
+      tls:
+        - secreetName: "{{ .Release.Name }}-cert"
+          hosts:
+            - "{{ .Values.DOMAIN }}"
+
+  persistence:
+    config:
+      enabled: true
+      type: persistentVolumeClaim
+      # ! set `storageClass` if not the default storage class should be used
+      # storageClass: storage-class-name
+      # ! set `existingClaim` if you provide the PVC externally
+      # existingClaim: "{{ .Release.Name }}-config-pvc"
+      accessMode: ReadWriteOnce
+      size: 2Gi
+      retain: true
+      advancedMounts:
+        main:
+          main:
+            - path: /config
+              readOnly: false
+
+    metadata:
+      enabled: true
+      type: persistentVolumeClaim
+      # ! set `storageClass` if not the default storage class should be used
+      # storageClass: storage-class-name
+      # ! set `existingClaim` if you provide the PVC externally
+      # existingClaim: "{{ .Release.Name }}-metadata-pvc"
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      retain: true
+      advancedMounts:
+        main:
+          main:
+            - path: /metadata
+              readOnly: false
+
+    media:
+      enabled: true
+      existingClaim: "{{ .Release.Name }}-media-pvc"
+      advancedMounts:
+        main:
+          main:
+            - path: /media
+              readOnly: true

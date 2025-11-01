@@ -2,7 +2,7 @@ apiVersion: v2
 name: audiobookshelf
 description: Audiobookshelf is an open-source self-hosted media server for your audiobooks, podcasts and ebooks.
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "2.30.0"
 dependencies:
   - name: common

@@ -1,5 +1,23 @@
 apiVersion: v1
 entries:
+  audiobookshelf:
+  - apiVersion: v2
+    appVersion: 2.30.0
+    created: "2025-11-01T13:50:02.455501461Z"
+    dependencies:
+    - name: common
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.3.0
+    description: Audiobookshelf is an open-source self-hosted media server for your
+      audiobooks, podcasts and ebooks.
+    digest: 458083e2395a50bdc9df39d683c4a85583aa05fdbb2d3b7f5119866d4f3be0cd
+    maintainers:
+    - name: JTreske
+    name: audiobookshelf
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/audiobookshelf-0.1.1/audiobookshelf-0.1.1.tgz
+    version: 0.1.1
   docmost:
   - apiVersion: v2
     appVersion: 0.23.2
@@ -33,4 +51,4 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/docmost-0.1.0/docmost-0.1.0.tgz
     version: 0.1.0
-generated: "2025-11-01T13:45:40.920297237Z"
+generated: "2025-11-01T13:50:02.455515848Z"

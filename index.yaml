@@ -51,4 +51,22 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/docmost-0.1.0/docmost-0.1.0.tgz
     version: 0.1.0
-generated: "2025-11-01T13:50:02.455515848Z"
+  tandoor:
+  - apiVersion: v2
+    appVersion: 2.3.3
+    created: "2025-11-02T13:47:44.84626173Z"
+    dependencies:
+    - name: common
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.3.0
+    description: The recipe manager that allows you to manage your ever growing collection
+      of digital recipes.
+    digest: 56bdc0893580750fa5d9f817ca46cf2ee7b903d9fcdbf1356c9a9903ff18a542
+    maintainers:
+    - name: JTreske
+    name: tandoor
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/tandoor-0.1.0/tandoor-0.1.0.tgz
+    version: 0.1.0
+generated: "2025-11-02T13:47:44.846274905Z"

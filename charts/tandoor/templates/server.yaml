@@ -1,0 +1,36 @@
+{{- include "bjw-s.common.loader.init" . }}
+
+{{- define "server.hardcodedValues" -}}
+# Set the nameOverride based on the release name if no override has been set
+{{ if not .Values.tandoor.global.nameOverride }}
+global:
+  nameOverride: "{{ .Release.Name }}"
+{{ else }}
+controllers:
+  main:
+    containers:
+      main:
+        env:
+          POSTGRES_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.tandoor.global.nameOverride}}-postgres-password"
+          SECRET_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.tandoor.global.nameOverride}}-secret-key"
+          EMAIL_HOST_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.tandoor.global.nameOverride}}-email-host-password"
+{{ end }}
+{{- end -}}
+
+{{- $ctx := deepCopy . -}}
+{{- $_ := get .Values "tandoor" | mergeOverwrite $ctx.Values -}}
+{{- $_ = mergeOverwrite $ctx.Values (include "server.hardcodedValues" . | fromYaml) -}}
+
+{{/* Render the templates */}}
+{{ if .Values.tandoor.enabled }}
+{{ include "bjw-s.common.loader.generate" $ctx }}
+{{ end }}

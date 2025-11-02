@@ -1,0 +1,163 @@
+# * For documentation of the values have a look at [bjw-s-labs common helm chart](https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml)
+
+### USER SECTION START ###
+# ! change the following value
+# * use `pwgen -s 40 1` to generate `DB_PASSWORD`
+DB_PASSWORD: "super-secret-password"
+
+# ! change the following value
+DOMAIN: tandoor.local
+
+# ! change the following value
+# * use `pwgen -s 70 1` to generate `SECRET_KEY`
+SECRET_KEY: replace-with-long-secret
+
+# ! configure mail settings as needed
+SMTP_HOST: smtp.gmail.com
+SMTP_PORT: 465
+SMTP_USERNAME: replace-with-smtp-username
+SMTP_PASSWORD: replace-with-smtp-password
+MAIL_FROM_ADDRESS: replace-with-mail-address
+MAIL_FROM_NAME: tandoor
+
+DB_HOSTNAME: "{{ .Release.Name }}-database-cluster-rw"
+DB_NAME: "tandoor"
+DB_USER: "tandoor"
+### USER SECTION END ###
+
+# Configuration of the main tandoor deployment
+tandoor:
+  enabled: true
+
+  global:
+    nameOverride: server
+
+  controllers:
+    main:
+      type: deployment
+      strategy: RollingUpdate
+      replicas: 1
+      containers:
+        main:
+          image:
+            repository: vabene1111/recipes
+            tag: "2.3.3"
+            pullPolicy: IfNotPresent
+          env:
+            TZ: Europe/Berlin
+            DB_ENGINE: django.db.backends.postgresql
+            POSTGRES_HOST: "{{ .Values.DB_HOSTNAME }}"
+            POSTGRES_PORT: "5432"
+            POSTGRES_DB: "{{ .Values.DB_NAME }}"
+            POSTGRES_USER: "{{ .Values.DB_USER }}"
+            POSTGRES_PASSWORD:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-postgres-password"
+                  key: POSTGRES_PASSWORD
+            SECRET_KEY:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-secret-key"
+                  key: SECRET_KEY
+            ALLOWED_HOSTS: "{{ .Values.DOMAIN }}"
+            EMAIL_HOST: "{{ .Values.SMTP_HOST }}"
+            EMAIL_PORT: "{{ .Values.SMTP_PORT }}"
+            SMTP_USERNAME: "{{ .Values.SMTP_USERNAME }}"
+            EMAIL_HOST_PASSWORD:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-email-host-password"
+                  key: EMAIL_HOST_PASSWORD
+            EMAIL_USE_TLS: "0"
+            EMAIL_USE_SSL: "1"
+            DEFAULT_FROM_EMAIL: "{{ .Values.MAIL_FROM_ADDRESS }}"
+            EMAIL_SUBJECT_PREFIX: "[Tandoor]"
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          # probes:
+          #   liveness:
+          #   readiness:
+          #   startup:
+          # ! set the following value as needed
+          resources: {}
+
+  secrets:
+    postgres-password:
+      enabled: true
+      stringData:
+        POSTGRES_PASSWORD: "{{ .Values.DB_PASSWORD }}"
+
+    secret-key:
+      enabled: true
+      stringData:
+        SECRET_KEY: "{{ .Values.SECRET_KEY }}"
+
+    email-host-password:
+      enabled: true
+      stringData:
+        EMAIL_HOST_PASSWORD: "{{ .Values.SMTP_PASSWORD }}"
+
+  service:
+    main:
+      enabled: true
+      controller: main
+      primary: true
+      type: ClusterIP
+      ports:
+        http:
+          enabled: true
+          primary: true
+          port: 80
+          targetPort: http
+          protocol: HTTP
+
+  ingress:
+    main:
+      enabled: true
+      # ! add additional proxy annotations
+      # annotations:
+      ### nginx.ingress.kubernetes.io/proxy-body-size: "20M"
+      # ! set `className` if not the default ingress class should be used
+      # className: ingress-class-name
+      hosts:
+        - host: "{{ .Values.DOMAIN }}"
+          paths:
+            - path: "/"
+              service:
+                identifier: main
+      tls:
+        - secreetName: "{{ .Release.Name }}-cert"
+          hosts:
+            - "{{ .Values.DOMAIN }}"
+
+  persistence:
+    staticfiles:
+      enabled: true
+      type: persistentVolumeClaim
+      # ! set `storageClass` if not the default storage class should be used
+      # storageClass: storage-class-name
+      # ! set `existingClaim` if you provide the PVC externally
+      # existingClaim: "{{ .Release.Name }}-staticfiles-pvc"
+      accessMode: ReadWriteOnce
+      size: 2Gi
+      retain: true
+      advancedMounts:
+        main:
+          main:
+            - path: /opt/recipes/staticfiles
+              readOnly: false
+
+    media:
+      enabled: true
+      existingClaim: "{{ .Release.Name }}-media-pvc"
+      advancedMounts:
+        main:
+          main:
+            - path: /opt/recipes/mediafiles
+              readOnly: false
+###
+# ! the PostgreSQL cluster should be created using the [cnpg](https://cloudnative-pg.github.io/charts) cluster chart
+# ! additionally to the cluster chart a secret for the cluster user is needed (not for this chart but for cnpg/cluster)

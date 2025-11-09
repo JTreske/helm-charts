@@ -21,6 +21,22 @@ entries:
   docmost:
   - apiVersion: v2
     appVersion: 0.23.2
+    created: "2025-11-09T15:02:55.222736671Z"
+    dependencies:
+    - name: common
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.3.0
+    description: Docmost is an open-source collaborative wiki and documentation software.
+    digest: 1ab88b9a6a39edbdab35c915e454975b5a0346b73407d024ea4842bcf1f18580
+    maintainers:
+    - name: JTreske
+    name: docmost
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/docmost-0.1.2/docmost-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v2
+    appVersion: 0.23.2
     created: "2025-11-01T13:45:40.920283471Z"
     dependencies:
     - name: common
@@ -51,6 +67,25 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/docmost-0.1.0/docmost-0.1.0.tgz
     version: 0.1.0
+  paperless:
+  - apiVersion: v2
+    appVersion: 2.19.5
+    created: "2025-11-09T15:02:55.360455021Z"
+    dependencies:
+    - name: common
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.3.0
+    description: Paperless-ngx is a community-supported open-source document management
+      system that transforms your physical documents into a searchable online archive
+      so you can keep, well, less paper.
+    digest: 4fc39ff4c718c968b30d7b3e45f36d10a93d8072c035c6e1eae97beecd7eacdf
+    maintainers:
+    - name: JTreske
+    name: paperless
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/paperless-0.1.0/paperless-0.1.0.tgz
+    version: 0.1.0
   tandoor:
   - apiVersion: v2
     appVersion: 2.3.3
@@ -69,4 +104,4 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/tandoor-0.1.0/tandoor-0.1.0.tgz
     version: 0.1.0
-generated: "2025-11-02T13:47:44.846274905Z"
+generated: "2025-11-09T15:02:55.360472293Z"

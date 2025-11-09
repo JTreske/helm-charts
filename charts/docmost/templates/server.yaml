@@ -5,13 +5,15 @@
 {{ if not .Values.docmost.global.nameOverride }}
 global:
   nameOverride: "{{ .Release.Name }}"
-{{ else }}
+{{ end }}
+
+{{ if or .Values.docmost.global.nameOverride .Values.valkey.global.nameOverride}}
 controllers:
   main:
     containers:
       main:
         env:
-          REDIS_URL: redis://{{ .Release.Name }}-{{ .Values.valkey.global.nameOverride }}:6379
+          {{ if not .Values.docmost.global.nameOverride }}
           APP_SECRET:
             valueFrom:
               secretKeyRef:
@@ -21,9 +23,13 @@ controllers:
               secretKeyRef:
                 name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride}}-database-url"
           SMTP_PASSWORD:
-              valueFrom:
-                secretKeyRef:
-                  name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride}}-smtp-password"
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride}}-smtp-password"
+          {{ end }}
+          {{ if .Values.valkey.global.nameOverride }}
+          REDIS_URL: redis://{{ .Release.Name }}-{{ .Values.valkey.global.nameOverride }}:6379
+          {{ end }}
 {{ end }}
 {{- end -}}
 

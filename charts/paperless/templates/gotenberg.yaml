@@ -1,0 +1,18 @@
+{{- include "bjw-s.common.loader.init" . }}
+
+{{- define "gotenberg.hardcodedValues" -}}
+# Set the nameOverride based on the release name if no override has been set
+{{ if not .Values.tika.gotenberg.global.nameOverride }}
+global:
+  nameOverride: "{{ .Release.Name }}"
+{{ end }}
+{{- end -}}
+
+{{- $ctx := deepCopy . -}}
+{{- $_ := get .Values.tika "gotenberg" | mergeOverwrite $ctx.Values -}}
+{{- $_ = mergeOverwrite $ctx.Values (include "gotenberg.hardcodedValues" . | fromYaml) -}}
+
+{{/* Render the templates */}}
+{{ if .Values.tika.enabled }}
+{{ include "bjw-s.common.loader.generate" $ctx }}
+{{ end }}

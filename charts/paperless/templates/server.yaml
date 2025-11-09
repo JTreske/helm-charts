@@ -1,0 +1,45 @@
+{{- include "bjw-s.common.loader.init" . }}
+
+{{- define "server.hardcodedValues" -}}
+# Set the nameOverride based on the release name if no override has been set
+{{ if not .Values.paperless.global.nameOverride }}
+global:
+  nameOverride: "{{ .Release.Name }}"
+{{ end }}
+
+{{ if or .Values.paperless.global.nameOverride .Values.valkey.global.nameOverride .Values.tika.tika.global.nameOverride .Values.tika.gotenberg.global.nameOverride }}
+controllers:
+  main:
+    containers:
+      main:
+        env:
+          {{ if .Values.paperless.global.nameOverride }}
+          PAPERLESS_SECRET_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.paperless.global.nameOverride}}-secret-key"
+          PAPERLESS_DBPASS:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.paperless.global.nameOverride}}-db-pass"
+          {{ end }}
+          {{ if .Values.valkey.global.nameOverride }}
+          PAPERLESS_REDIS: "redis://{{ .Release.Name }}-{{ .Values.valkey.global.nameOverride }}:6379"
+          {{ end }}
+          {{ if .Values.tika.tika.global.nameOverride }}
+          PAPERLESS_TIKA_ENDPOINT: http://{{ .Release.Name }}-{{ .Values.tika.tika.global.nameOverride }}:9998
+          {{ end }}
+          {{ if .Values.tika.gotenberg.global.nameOverride }}
+          PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://{{ .Release.Name }}-{{ .Values.tika.gotenberg.global.nameOverride }}:3000
+          {{ end }}
+{{ end }}
+{{- end -}}
+
+{{- $ctx := deepCopy . -}}
+{{- $_ := get .Values "paperless" | mergeOverwrite $ctx.Values -}}
+{{- $_ = mergeOverwrite $ctx.Values (include "server.hardcodedValues" . | fromYaml) -}}
+
+{{/* Render the templates */}}
+{{ if .Values.paperless.enabled }}
+{{ include "bjw-s.common.loader.generate" $ctx }}
+{{ end }}

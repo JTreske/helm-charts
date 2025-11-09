@@ -1,0 +1,12 @@
+apiVersion: v2
+name: paperless
+description: Paperless-ngx is a community-supported open-source document management system that transforms your physical documents into a searchable online archive so you can keep, well, less paper.
+type: application
+version: 0.1.0
+appVersion: "2.19.5"
+dependencies:
+  - name: common
+    version: 4.3.0
+    repository: https://bjw-s-labs.github.io/helm-charts/
+maintainers:
+  - name: JTreske

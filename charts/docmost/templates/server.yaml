@@ -13,7 +13,7 @@ controllers:
     containers:
       main:
         env:
-          {{ if not .Values.docmost.global.nameOverride }}
+          {{ if .Values.docmost.global.nameOverride }}
           APP_SECRET:
             valueFrom:
               secretKeyRef:

@@ -314,7 +314,7 @@ tika:
           main:
             image:
               repository: apache/tika
-              tag: "3.2.3"
+              tag: "3.2.3.0-full"
               pullPolicy: IfNotPresent
             ports:
               - name: http

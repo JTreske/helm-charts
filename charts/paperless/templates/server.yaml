@@ -17,11 +17,11 @@ controllers:
           PAPERLESS_SECRET_KEY:
             valueFrom:
               secretKeyRef:
-                name: "{{ .Release.Name }}-{{ .Values.paperless.global.nameOverride}}-secret-key"
+                name: "{{ .Release.Name }}-{{ .Values.paperless.global.nameOverride }}-secret-key"
           PAPERLESS_DBPASS:
             valueFrom:
               secretKeyRef:
-                name: "{{ .Release.Name }}-{{ .Values.paperless.global.nameOverride}}-db-pass"
+                name: "{{ .Release.Name }}-{{ .Values.paperless.global.nameOverride }}-db-pass"
           {{ end }}
           {{ if .Values.valkey.global.nameOverride }}
           PAPERLESS_REDIS: "redis://{{ .Release.Name }}-{{ .Values.valkey.global.nameOverride }}:6379"

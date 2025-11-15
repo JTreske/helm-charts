@@ -7,7 +7,7 @@ global:
   nameOverride: "{{ .Release.Name }}"
 {{ end }}
 
-{{ if or .Values.docmost.global.nameOverride .Values.valkey.global.nameOverride}}
+{{ if or .Values.docmost.global.nameOverride .Values.valkey.global.nameOverride }}
 controllers:
   main:
     containers:
@@ -17,15 +17,15 @@ controllers:
           APP_SECRET:
             valueFrom:
               secretKeyRef:
-                name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride}}-app-secret"
+                name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride }}-app-secret"
           DATABASE_URL:
             valueFrom:
               secretKeyRef:
-                name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride}}-database-url"
+                name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride }}-database-url"
           SMTP_PASSWORD:
             valueFrom:
               secretKeyRef:
-                name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride}}-smtp-password"
+                name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride }}-smtp-password"
           {{ end }}
           {{ if .Values.valkey.global.nameOverride }}
           REDIS_URL: redis://{{ .Release.Name }}-{{ .Values.valkey.global.nameOverride }}:6379

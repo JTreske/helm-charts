@@ -17,20 +17,20 @@ controllers:
           PAPERLESS_SECRET_KEY:
             valueFrom:
               secretKeyRef:
-                name: "{{ .Release.Name }}-{{ .Values.paperless.global.nameOverride}}-secret-key"
+                name: "{{ .Release.Name }}-{{ .Values.paperless.global.nameOverride }}-secret-key"
           PAPERLESS_DBPASS:
             valueFrom:
               secretKeyRef:
-                name: "{{ .Release.Name }}-{{ .Values.paperless.global.nameOverride}}-db-pass"
+                name: "{{ .Release.Name }}-{{ .Values.paperless.global.nameOverride }}-db-pass"
           {{ end }}
           {{ if .Values.valkey.global.nameOverride }}
           PAPERLESS_REDIS: "redis://{{ .Release.Name }}-{{ .Values.valkey.global.nameOverride }}:6379"
           {{ end }}
           {{ if .Values.tika.tika.global.nameOverride }}
-          PAPERLESS_TIKA_ENDPOINT: http://{{ .Release.Name }}-{{ .Values.tika.tika.global.nameOverride }}:9998
+          PAPERLESS_TIKA_ENDPOINT: "http://{{ .Release.Name }}-{{ .Values.tika.tika.global.nameOverride }}:9998"
           {{ end }}
           {{ if .Values.tika.gotenberg.global.nameOverride }}
-          PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://{{ .Release.Name }}-{{ .Values.tika.gotenberg.global.nameOverride }}:3000
+          PAPERLESS_TIKA_GOTENBERG_ENDPOINT: "http://{{ .Release.Name }}-{{ .Values.tika.gotenberg.global.nameOverride }}:3000"
           {{ end }}
 {{ end }}
 {{- end -}}

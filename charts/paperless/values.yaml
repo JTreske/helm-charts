@@ -38,7 +38,7 @@ paperless:
         main:
           image:
             repository: ghcr.io/paperless-ngx/paperless-ngx
-            tag: "2.19.5"
+            tag: "2.19.6"
             pullPolicy: IfNotPresent
           env:
             PAPERLESS_URL: "{{ .Values.APP_URL }}"
@@ -100,7 +100,7 @@ paperless:
 
   ingress:
     main:
-      enabled: true
+      enabled: false
       # ! add additional proxy annotations
       # annotations:
       ### nginx.ingress.kubernetes.io/proxy-body-size: "1G"
@@ -119,6 +119,41 @@ paperless:
         - secreetName: "{{ .Release.Name }}-cert"
           hosts:
             - "{{ .Values.DOMAIN }}"
+
+  route:
+    main:
+      enabled: false
+      kind: HTTPRoute
+      # ! set the gateway to connect in `parentRefs`
+      # parentRefs:
+      #   - group: gateway.networking.k8s.io
+      #     kind: Gateway
+      #     name:
+      #     namespace:
+      #     sectionName: https
+      hostnames:
+        - "{{ .Values.DOMAIN }}"
+      rules:
+        - backendRefs:
+            - identifier: main
+          matches:
+            - path:
+                type: PathPrefix
+                value: /
+          # ! if you want to add filters you must override the complete rules section
+          # filters:
+          #   - type: ResponseHeaderModifier
+          #     responseHeaderModifier:
+          #       remove:
+          #         - X-Powered-By
+          #         - Server
+          #       add:
+          #         - name: X-Frame-Options
+          #           value: SAMEORIGIN
+          #         - name: Content-Security-Policy
+          #           value: "frame-ancestors 'self';"
+          #         - name: Strict-Transport-Security
+          #           value: "max-age=15552001; includeSubdomains; preload"
 
   persistence:
     data:
@@ -139,7 +174,14 @@ paperless:
 
     media:
       enabled: true
-      existingClaim: "{{ .Release.Name }}-media-pvc"
+      type: persistentVolumeClaim
+      # ! set `storageClass` if not the default storage class should be used
+      # storageClass: storage-class-name
+      # ! set `existingClaim` if you provide the PVC externally
+      # existingClaim: "{{ .Release.Name }}-media-pvc"
+      accessMode: ReadWriteOnce
+      size: 2Gi
+      retain: true
       advancedMounts:
         main:
           main:
@@ -148,21 +190,11 @@ paperless:
 
     export:
       enabled: true
-      existingClaim: "{{ .Release.Name }}-export-pvc"
-      advancedMounts:
-        main:
-          main:
-            - path: /usr/src/paperless/export
-              readOnly: false
+      type: emptyDir
 
     consume:
       enabled: true
-      existingClaim: "{{ .Release.Name }}-consume-pvc"
-      advancedMounts:
-        main:
-          main:
-            - path: /usr/src/paperless/consume
-              readOnly: false
+      type: emptyDir
 
 valkey:
   enabled: true
@@ -314,7 +346,7 @@ tika:
           main:
             image:
               repository: apache/tika
-              tag: "3.2.3"
+              tag: "3.2.3.0-full"
               pullPolicy: IfNotPresent
             ports:
               - name: http

@@ -27,10 +27,10 @@ controllers:
           PAPERLESS_REDIS: "redis://{{ .Release.Name }}-{{ .Values.valkey.global.nameOverride }}:6379"
           {{ end }}
           {{ if .Values.tika.tika.global.nameOverride }}
-          PAPERLESS_TIKA_ENDPOINT: http://{{ .Release.Name }}-{{ .Values.tika.tika.global.nameOverride }}:9998
+          PAPERLESS_TIKA_ENDPOINT: "http://{{ .Release.Name }}-{{ .Values.tika.tika.global.nameOverride }}:9998"
           {{ end }}
           {{ if .Values.tika.gotenberg.global.nameOverride }}
-          PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://{{ .Release.Name }}-{{ .Values.tika.gotenberg.global.nameOverride }}:3000
+          PAPERLESS_TIKA_GOTENBERG_ENDPOINT: "http://{{ .Release.Name }}-{{ .Values.tika.gotenberg.global.nameOverride }}:3000"
           {{ end }}
 {{ end }}
 {{- end -}}

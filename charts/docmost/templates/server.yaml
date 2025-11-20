@@ -28,7 +28,7 @@ controllers:
                 name: "{{ .Release.Name }}-{{ .Values.docmost.global.nameOverride }}-smtp-password"
           {{ end }}
           {{ if .Values.valkey.global.nameOverride }}
-          REDIS_URL: redis://{{ .Release.Name }}-{{ .Values.valkey.global.nameOverride }}:6379
+          REDIS_URL: "redis://{{ .Release.Name }}-{{ .Values.valkey.global.nameOverride }}:6379"
           {{ end }}
 {{ end }}
 {{- end -}}

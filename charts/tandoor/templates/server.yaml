@@ -5,24 +5,28 @@
 {{ if not .Values.tandoor.global.nameOverride }}
 global:
   nameOverride: "{{ .Release.Name }}"
-{{ else }}
+{{ end }}
+
+{{ if or .Values.tandoor.global.nameOverride }}
 controllers:
   main:
     containers:
       main:
         env:
+          {{ if .Values.tandoor.global.nameOverride }}
           POSTGRES_PASSWORD:
             valueFrom:
               secretKeyRef:
-                name: "{{ .Release.Name }}-{{ .Values.tandoor.global.nameOverride}}-postgres-password"
+                name: "{{ .Release.Name }}-{{ .Values.tandoor.global.nameOverride }}-postgres-password"
           SECRET_KEY:
             valueFrom:
               secretKeyRef:
-                name: "{{ .Release.Name }}-{{ .Values.tandoor.global.nameOverride}}-secret-key"
+                name: "{{ .Release.Name }}-{{ .Values.tandoor.global.nameOverride }}-secret-key"
           EMAIL_HOST_PASSWORD:
             valueFrom:
               secretKeyRef:
-                name: "{{ .Release.Name }}-{{ .Values.tandoor.global.nameOverride}}-email-host-password"
+                name: "{{ .Release.Name }}-{{ .Values.tandoor.global.nameOverride }}-email-host-password"
+          {{ end }}
 {{ end }}
 {{- end -}}
 

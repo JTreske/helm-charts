@@ -3,6 +3,23 @@ entries:
   audiobookshelf:
   - apiVersion: v2
     appVersion: 2.30.0
+    created: "2025-11-20T19:12:56.705745248Z"
+    dependencies:
+    - name: common
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.3.0
+    description: Audiobookshelf is an open-source self-hosted media server for your
+      audiobooks, podcasts and ebooks.
+    digest: 361e9b4696db148979b7def171d5f35e21a9be21c0013899f05d54fb5658184e
+    maintainers:
+    - name: JTreske
+    name: audiobookshelf
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/audiobookshelf-0.2.0/audiobookshelf-0.2.0.tgz
+    version: 0.2.0
+  - apiVersion: v2
+    appVersion: 2.30.0
     created: "2025-11-01T13:50:02.455501461Z"
     dependencies:
     - name: common
@@ -19,6 +36,22 @@ entries:
     - https://github.com/JTreske/helm-charts/releases/download/audiobookshelf-0.1.1/audiobookshelf-0.1.1.tgz
     version: 0.1.1
   docmost:
+  - apiVersion: v2
+    appVersion: 0.23.2
+    created: "2025-11-20T19:12:56.841025288Z"
+    dependencies:
+    - name: common
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.3.0
+    description: Docmost is an open-source collaborative wiki and documentation software.
+    digest: 8a8c1795c6e756456fade2fe2314c9c857c574425ebd0654fff7424b5b742552
+    maintainers:
+    - name: JTreske
+    name: docmost
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/docmost-0.2.0/docmost-0.2.0.tgz
+    version: 0.2.0
   - apiVersion: v2
     appVersion: 0.23.2
     created: "2025-11-09T15:02:55.222736671Z"
@@ -69,6 +102,24 @@ entries:
     version: 0.1.0
   paperless:
   - apiVersion: v2
+    appVersion: 2.19.6
+    created: "2025-11-20T19:12:56.988901854Z"
+    dependencies:
+    - name: common
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.3.0
+    description: Paperless-ngx is a community-supported open-source document management
+      system that transforms your physical documents into a searchable online archive
+      so you can keep, well, less paper.
+    digest: 794975ba2fd7b77119ac3a5a53b1c6772dcffbda0f8eb3f53125ff4cb59be7d5
+    maintainers:
+    - name: JTreske
+    name: paperless
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/paperless-0.2.0/paperless-0.2.0.tgz
+    version: 0.2.0
+  - apiVersion: v2
     appVersion: 2.19.5
     created: "2025-11-09T15:02:55.360455021Z"
     dependencies:
@@ -88,6 +139,23 @@ entries:
     version: 0.1.0
   tandoor:
   - apiVersion: v2
+    appVersion: 2.3.5
+    created: "2025-11-20T19:12:57.126135484Z"
+    dependencies:
+    - name: common
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.3.0
+    description: The recipe manager that allows you to manage your ever growing collection
+      of digital recipes.
+    digest: efe316ba842ec8a49e6a5cd11bd18d4e3347d278fb066e47ed710758dcb2e5c6
+    maintainers:
+    - name: JTreske
+    name: tandoor
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/tandoor-0.2.0/tandoor-0.2.0.tgz
+    version: 0.2.0
+  - apiVersion: v2
     appVersion: 2.3.3
     created: "2025-11-02T13:47:44.84626173Z"
     dependencies:
@@ -104,4 +172,4 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/tandoor-0.1.0/tandoor-0.1.0.tgz
     version: 0.1.0
-generated: "2025-11-09T15:02:55.360472293Z"
+generated: "2025-11-20T19:12:57.126161212Z"

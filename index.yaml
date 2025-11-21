@@ -100,6 +100,24 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/docmost-0.1.0/docmost-0.1.0.tgz
     version: 0.1.0
+  garage:
+  - apiVersion: v2
+    appVersion: v2.1.0
+    created: "2025-11-21T19:45:30.958330131Z"
+    dependencies:
+    - name: common
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.3.0
+    description: S3-compatible object store for small self-hosted geo-distributed
+      deployments.
+    digest: 636b9df4917526a10fefeff269daf00259c1ea58b2ea0449ccfcfe20a7693948
+    maintainers:
+    - name: JTreske
+    name: garage
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/garage-0.1.0/garage-0.1.0.tgz
+    version: 0.1.0
   paperless:
   - apiVersion: v2
     appVersion: 2.19.6
@@ -172,4 +190,4 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/tandoor-0.1.0/tandoor-0.1.0.tgz
     version: 0.1.0
-generated: "2025-11-20T19:12:57.126161212Z"
+generated: "2025-11-21T19:45:30.958357202Z"

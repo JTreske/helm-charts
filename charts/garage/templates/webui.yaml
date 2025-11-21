@@ -1,0 +1,53 @@
+{{- include "bjw-s.common.loader.init" . }}
+
+{{- define "webui.hardcodedValues" -}}
+# Set the nameOverride based on the release name if no override has been set
+{{ if not .Values.webui.global.nameOverride }}
+global:
+  nameOverride: "{{ .Release.Name }}"
+{{ end }}
+
+{{ if or .Values.garage.global.nameOverride .Values.webui.global.nameOverride }}
+controllers:
+  main:
+    containers:
+      main:
+        env:
+          {{ if .Values.garage.global.nameOverride }}
+          API_BASE_URL: "http://{{ .Release.Name }}-{{ .Values.garage.global.nameOverride }}:3903"
+          S3_ENDPOINT_URL: "http://{{ .Release.Name }}-{{ .Values.garage.global.nameOverride }}:3900"
+          {{ end }}
+          {{ if .Values.webui.global.nameOverride }}
+          AUTH_USER_PASS:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.webui.global.nameOverride }}"
+                key: AUTH_USER_PASS
+          {{ end }}
+    {{ if .Values.garage.global.nameOverride }}
+    initContainers:
+      init-config:
+        env:
+          RPC_SECRET:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.garage.global.nameOverride }}"
+                key: RPC_SECRET
+    {{ end }}
+{{ end }}
+
+{{ if .Values.garage.global.nameOverride }}
+persistence:
+  config:
+    name: "{{ .Release.Name }}-{{ .Values.garage.global.nameOverride }}"
+{{ end }}
+{{- end -}}
+
+{{- $ctx := deepCopy . -}}
+{{- $_ := get .Values "webui" | mergeOverwrite $ctx.Values -}}
+{{- $_ = mergeOverwrite $ctx.Values (include "webui.hardcodedValues" . | fromYaml) -}}
+
+{{/* Render the templates */}}
+{{ if .Values.webui.enabled }}
+{{ include "bjw-s.common.loader.generate" $ctx }}
+{{ end }}

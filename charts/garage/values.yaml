@@ -1,0 +1,539 @@
+# * For documentation of the values have a look at [bjw-s-labs common helm chart](https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml)
+
+### USER SECTION START ###
+# ! change the following value
+# * use `openssl rand -hex 32` to generate `RPC_SECRET`
+RPC_SECRET: replace-with-generated-secret
+
+# ! change the following value
+# * use `pwgen -s 40 1` to generate `ADMIN_TOKEN`
+ADMIN_TOKEN: replace-with-token
+
+# ! change the following value
+# * use `pwgen -s 40 1` to generate the password
+# * install the apache package to get the `htpasswd` utility
+# * use `htpasswd -nbBC 10 "YOUR_USERNAME" "YOUR_PASSWORD"` to generate `AUTH_USER_PASS`
+AUTH_USER_PASS: "username:$2y$10$DSTi9o..."
+
+# ! change the following values if needed
+config:
+  # https://garagehq.deuxfleurs.fr/documentation/reference-manual/configuration/#db_engine
+  dbEngine: lmdb
+
+  # https://garagehq.deuxfleurs.fr/documentation/reference-manual/configuration/#block_size
+  blockSize: "1048576"
+
+  # https://garagehq.deuxfleurs.fr/documentation/reference-manual/configuration/#replication_factor
+  replicationFactor: "1"
+
+  # https://garagehq.deuxfleurs.fr/documentation/reference-manual/configuration/#consistency_mode
+  consistencyMode: "consistent"
+
+  # https://garagehq.deuxfleurs.fr/documentation/reference-manual/configuration/#compression_level
+  compressionLevel: "1"
+
+  # https://garagehq.deuxfleurs.fr/documentation/reference-manual/configuration/#metadata_auto_snapshot_interval
+  metadataAutoSnapshotInterval: ""
+
+  # -- Set to true if you want to use k8s discovery but install the CRDs manually outside of the helm chart
+  kubernetesSkipCrd: false
+
+  # -- This is not required if you use the integrated kubernetes discovery
+  bootstrapPeers: []
+
+  domain:
+    s3: s3.garage.local
+    web: web.garage.local
+    admin: admin.garage.local
+    webui: garage.local
+
+  region: Europe
+
+  webIndex: index.html
+
+  monitoring:
+    tracing:
+      # -- specify a sink endpoint for OpenTelemetry Traces, e.g., `http://localhost:4317`
+      sink: ""
+### USER SECTION END ###
+
+# Configuration of the main garage deployment
+garage:
+  enabled: true
+
+  global:
+    nameOverride: server
+
+  controllers:
+    main:
+      type: deployment
+      strategy: RollingUpdate
+      # ! for now only 1 replica is supported
+      replicas: 1
+      serviceAccount:
+        identifier: garage
+      containers:
+        main:
+          image:
+            repository: dxflrs/amd64_garage
+            tag: "v2.1.0"
+            pullPolicy: IfNotPresent
+          ports:
+            - name: s3-api
+              containerPort: 3900
+              protocol: TCP
+            - name: web
+              containerPort: 3902
+            - name: admin
+              containerPort: 3903
+          # probes:
+          #   liveness:
+          #   readiness:
+          #   startup:
+          # ! set the following value as needed
+          resources: {}
+
+      initContainers:
+        init-config:
+          image:
+            repository: busybox
+            tag: stable
+          imagePullPolicy: IfNotPresent
+          command:
+            [
+              "sh",
+              "-c",
+              'sed "s/__RPC_SECRET_REPLACE__/$RPC_SECRET/" /mnt/garage.toml > /mnt/etc/garage.toml',
+            ]
+          env:
+            RPC_SECRET:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}"
+                  key: RPC_SECRET
+
+  secrets:
+    rpc-secret:
+      enabled: true
+      stringData:
+        RPC_SECRET: "{{ .Values.RPC_SECRET }}"
+
+  serviceAccount:
+    garage:
+      enabled: true
+
+  service:
+    main:
+      enabled: true
+      controller: main
+      type: ClusterIP
+      ports:
+        s3:
+          enabled: true
+          port: 3900
+          targetPort: s3-api
+          protocol: TCP
+        rpc:
+          enabled: true
+          port: 3901
+          targetPort: rpc
+          protocol: TCP
+        web:
+          enabled: true
+          port: 3902
+          targetPort: web
+          protocol: HTTP
+        admin:
+          enabled: true
+          port: 3903
+          targetPort: admin
+
+  ingress:
+    s3-api:
+      enabled: false
+      # ! add additional proxy annotations
+      # annotations:
+      ### nginx.ingress.kubernetes.io/proxy-body-size: "1G"
+      # ! set `className` if not the default ingress class should be used
+      # className: ingress-class-name
+      hosts:
+        - host: "{{ .Values.config.domain.s3 }}"
+          paths:
+            - path: "/"
+              service:
+                identifier: main
+                port: s3
+        - host: "*.{{ .Values.config.domain.s3 }}"
+          paths:
+            - path: "/"
+              service:
+                identifier: main
+                port: s3
+    web:
+      enabled: false
+      # ! add additional proxy annotations
+      # annotations:
+      ### nginx.ingress.kubernetes.io/proxy-body-size: "1G"
+      # ! set `className` if not the default ingress class should be used
+      # className: ingress-class-name
+      hosts:
+        - host: "*.{{ .Values.config.domain.web }}"
+          paths:
+            - path: "/"
+              service:
+                identifier: main
+                port: web
+
+    admin:
+      enabled: false
+      # ! add additional proxy annotations
+      # annotations:
+      ### nginx.ingress.kubernetes.io/proxy-body-size: "1G"
+      # ! set `className` if not the default ingress class should be used
+      # className: ingress-class-name
+      hosts:
+        - host: "{{ .Values.config.domain.admin }}"
+          paths:
+            - path: "/"
+              service:
+                identifier: main
+                port: admin
+
+  route:
+    s3-api:
+      enabled: false
+      kind: HTTPRoute
+      # ! set the gateway to connect in `parentRefs`
+      # parentRefs:
+      #   - group: gateway.networking.k8s.io
+      #     kind: Gateway
+      #     name:
+      #     namespace:
+      #     sectionName: https
+      hostnames:
+        - "{{ .Values.config.domain.s3 }}"
+        - "*.{{ .Values.config.domain.s3 }}"
+      rules:
+        - backendRefs:
+            - identifier: main
+              port: 3900
+          matches:
+            - path:
+                type: PathPrefix
+                value: /
+          # ! if you want to add filters you must override the complete rules section
+          # filters:
+          #   - type: ResponseHeaderModifier
+          #     responseHeaderModifier:
+          #       remove:
+          #         - X-Powered-By
+          #         - Server
+          #       add:
+          #         - name: X-Frame-Options
+          #           value: SAMEORIGIN
+          #         - name: Content-Security-Policy
+          #           value: "frame-ancestors 'self';"
+          #         - name: Strict-Transport-Security
+          #           value: "max-age=15552001; includeSubdomains; preload"
+
+    web:
+      enabled: false
+      kind: HTTPRoute
+      # ! set the gateway to connect in `parentRefs`
+      # parentRefs:
+      #   - group: gateway.networking.k8s.io
+      #     kind: Gateway
+      #     name:
+      #     namespace:
+      #     sectionName: https
+      hostnames:
+        - "*.{{ .Values.config.domain.web }}"
+      rules:
+        - backendRefs:
+            - identifier: main
+              port: 3902
+          matches:
+            - path:
+                type: PathPrefix
+                value: /
+          # ! if you want to add filters you must override the complete rules section
+          # filters:
+          #   - type: ResponseHeaderModifier
+          #     responseHeaderModifier:
+          #       remove:
+          #         - X-Powered-By
+          #         - Server
+          #       add:
+          #         - name: X-Frame-Options
+          #           value: SAMEORIGIN
+          #         - name: Content-Security-Policy
+          #           value: "frame-ancestors 'self';"
+          #         - name: Strict-Transport-Security
+          #           value: "max-age=15552001; includeSubdomains; preload"
+
+    admin:
+      enabled: false
+      kind: HTTPRoute
+      # ! set the gateway to connect in `parentRefs`
+      # parentRefs:
+      #   - group: gateway.networking.k8s.io
+      #     kind: Gateway
+      #     name:
+      #     namespace:
+      #     sectionName: https
+      hostnames:
+        - "{{ .Values.config.domain.admin }}"
+      rules:
+        - backendRefs:
+            - identifier: main
+              port: 3903
+          matches:
+            - path:
+                type: PathPrefix
+                value: /
+          # ! if you want to add filters you must override the complete rules section
+          # filters:
+          #   - type: ResponseHeaderModifier
+          #     responseHeaderModifier:
+          #       remove:
+          #         - X-Powered-By
+          #         - Server
+          #       add:
+          #         - name: X-Frame-Options
+          #           value: SAMEORIGIN
+          #         - name: Content-Security-Policy
+          #           value: "frame-ancestors 'self';"
+          #         - name: Strict-Transport-Security
+          #           value: "max-age=15552001; includeSubdomains; preload"
+
+  persistence:
+    metadata:
+      enabled: true
+      type: persistentVolumeClaim
+      # ! set `storageClass` if not the default storage class should be used
+      # storageClass: storage-class-name
+      # ! set `existingClaim` if you provide the PVC externally
+      # existingClaim: "{{ .Release.Name }}-metadata-pvc"
+      accessMode: ReadWriteOnce
+      size: 1Gi
+      retain: true
+      advancedMounts:
+        main:
+          main:
+            - path: /mnt/meta
+              readOnly: false
+
+    data:
+      enabled: true
+      # ! set `storageClass` if not the default storage class should be used
+      # storageClass: storage-class-name
+      # ! set `existingClaim` if you provide the PVC externally
+      # existingClaim: "{{ .Release.Name }}-data-pvc"
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      retain: true
+      advancedMounts:
+        main:
+          main:
+            - path: /mnt/data
+              readOnly: false
+
+    etc:
+      enabled: true
+      type: emptyDir
+      advancedMounts:
+        main:
+          init-config:
+            - path: /mnt/etc
+              readOnly: false
+          main:
+            - path: /etc/garage.toml
+              subPath: garage.toml
+              readOnly: true
+
+    config:
+      enabled: true
+      type: configMap
+      identifier: garage-config
+      advancedMounts:
+        main:
+          init-config:
+            - path: /mnt/garage.toml
+              subPath: garage.toml
+              readOnly: true
+
+  rbac:
+    roles:
+      crdRole:
+        enabled: true
+        type: ClusterRole
+        rules:
+          - apiGroups: ["apiextensions.k8s.io"]
+            resources: ["customresourcedefinitions"]
+            verbs: ["get", "list", "watch", "create", "patch"]
+          - apiGroups: ["deuxfleurs.fr"]
+            resources: ["garagenodes"]
+            verbs:
+              ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+    bindings:
+      crdBind:
+        enabled: true
+        type: ClusterRoleBinding
+        roleRef:
+          kind: ClusterRole
+          identifier: crdRole
+        subjects:
+          - kind: ServiceAccount
+            identifier: garage
+
+webui:
+  enabled: true
+
+  global:
+    nameOverride: webui
+
+  controllers:
+    main:
+      type: deployment
+      strategy: RollingUpdate
+      replicas: 1
+      containers:
+        main:
+          image:
+            repository: khairul169/garage-webui
+            tag: "1.1.0"
+            pullPolicy: IfNotPresent
+          env:
+            API_BASE_URL: "http://{{ .Release.Name }}:3903"
+            S3_ENDPOINT_URL: "http://{{ .Release.Name }}:3900"
+            AUTH_USER_PASS:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-auth-user-pass"
+                  key: AUTH_USER_PASS
+          ports:
+            - name: http
+              containerPort: 3909
+              protocol: TCP
+          # ! set the following value as needed
+          resources: {}
+
+      initContainers:
+        init-config:
+          image:
+            repository: busybox
+            tag: stable
+          imagePullPolicy: IfNotPresent
+          command:
+            [
+              "sh",
+              "-c",
+              'sed "s/__RPC_SECRET_REPLACE__/$RPC_SECRET/" /mnt/garage.toml > /mnt/etc/garage.toml',
+            ]
+          env:
+            RPC_SECRET:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}"
+                  key: RPC_SECRET
+
+  secrets:
+    auth-user-pass:
+      enabled: true
+      stringData:
+        AUTH_USER_PASS: "{{ .Values.AUTH_USER_PASS }}"
+
+  service:
+    main:
+      enabled: true
+      controller: main
+      primary: true
+      type: ClusterIP
+      ports:
+        http:
+          enabled: true
+          primary: true
+          port: 3909
+          targetPort: http
+          protocol: HTTP
+
+  # ! By default the WebUI does not provide authentication
+  ingress:
+    main:
+      enabled: false
+      # ! add additional proxy annotations
+      # annotations:
+      # ! set `className` if not the default ingress class should be used
+      # className: ingress-class-name
+      hosts:
+        - host: "{{ .Values.config.domain.webui }}"
+          paths:
+            - path: "/"
+              service:
+                identifier: main
+      tls:
+        - secreetName: "{{ .Release.Name }}-cert"
+          hosts:
+            - "{{ .Values.config.domain.webui }}"
+
+  route:
+    main:
+      enabled: false
+      kind: HTTPRoute
+      # ! set the gateway to connect in `parentRefs`
+      # parentRefs:
+      #   - group: gateway.networking.k8s.io
+      #     kind: Gateway
+      #     name:
+      #     namespace:
+      #     sectionName: https
+      hostnames:
+        - "{{ .Values.config.domain.webui }}"
+      rules:
+        - backendRefs:
+            - identifier: main
+              port: 3909
+          matches:
+            - path:
+                type: PathPrefix
+                value: /
+          # ! if you want to add filters you must override the complete rules section
+          # filters:
+          #   - type: ResponseHeaderModifier
+          #     responseHeaderModifier:
+          #       remove:
+          #         - X-Powered-By
+          #         - Server
+          #       add:
+          #         - name: X-Frame-Options
+          #           value: SAMEORIGIN
+          #         - name: Content-Security-Policy
+          #           value: "frame-ancestors 'self';"
+          #         - name: Strict-Transport-Security
+          #           value: "max-age=15552001; includeSubdomains; preload"
+
+  persistence:
+    config:
+      enabled: true
+      type: configMap
+      name: "{{ .Release.Name }}"
+      advancedMounts:
+        main:
+          init-config:
+            - path: /mnt/garage.toml
+              subPath: garage.toml
+              readOnly: true
+
+    etc:
+      enabled: true
+      type: emptyDir
+      advancedMounts:
+        main:
+          init-config:
+            - path: /mnt/etc
+              readOnly: false
+          main:
+            - path: /etc/garage.toml
+              subPath: garage.toml
+              readOnly: true

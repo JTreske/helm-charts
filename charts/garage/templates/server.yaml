@@ -1,0 +1,86 @@
+{{- include "bjw-s.common.loader.init" . }}
+
+{{- define "server.hardcodedValues" -}}
+# Set the nameOverride based on the release name if no override has been set
+{{ if not .Values.garage.global.nameOverride }}
+global:
+  nameOverride: "{{ .Release.Name }}"
+{{ end }}
+
+{{ if or .Values.garage.global.nameOverride }}
+controllers:
+  main:
+    initContainers:
+      init-config:
+        env:
+          {{ if .Values.garage.global.nameOverride }}
+          RPC_SECRET:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.garage.global.nameOverride }}"
+                key: RPC_SECRET
+          {{ end }}
+{{ end }}
+
+configMaps:
+  garage-config:
+    enabled: true
+    data:
+      garage.toml: |-
+        metadata_dir = "/mnt/meta"
+        data_dir = "/mnt/data"
+
+        db_engine = "{{ .Values.config.dbEngine }}"
+
+        block_size = {{ .Values.config.blockSize }}
+
+        replication_factor = {{ .Values.config.replicationFactor }}
+        consistency_mode = "{{ .Values.config.consistencyMode }}"
+
+        compression_level = {{ .Values.config.compressionLevel }}
+
+        {{- if .Values.config.metadataAutoSnapshotInterval }}
+        metadata_auto_snapshot_interval = {{ .Values.config.metadataAutoSnapshotInterval | quote }}
+        {{- end }}
+
+        rpc_bind_addr = "[::]:3901"
+        {{ if .Values.garage.global.nameOverride }}
+        rpc_public_addr = "{{ .Release.Name }}-{{ .Values.garage.global.nameOverride }}:3901"
+        {{ else }}
+        rpc_public_addr = "{{ .Release.Name }}:3901"
+        {{ end }}
+        rpc_secret = "__RPC_SECRET_REPLACE__"
+
+        bootstrap_peers = {{ .Values.config.bootstrapPeers }}
+
+        [kubernetes_discovery]
+        namespace = "{{ .Release.Namespace }}"
+        service_name = "{{ .Release.Name }}"
+        skip_crd = {{ .Values.config.kubernetesSkipCrd }}
+
+        [s3_api]
+        s3_region = "{{ .Values.config.region }}"
+        api_bind_addr = "[::]:3900"
+        root_domain = ".{{ .Values.config.domain.s3 }}"
+
+        [s3_web]
+        bind_addr = "[::]:3902"
+        root_domain = ".{{ .Values.config.domain.web }}"
+        index = "{{ .Values.config.webIndex }}"
+
+        [admin]
+        api_bind_addr = "[::]:3903"
+        admin_token = {{ .Values.ADMIN_TOKEN | b64enc | quote }}
+        {{- if .Values.config.monitoring.tracing.sink }}
+        trace_sink = "{{ .Values.config.monitoring.tracing.sink }}"
+        {{- end }}
+{{- end -}}
+
+{{- $ctx := deepCopy . -}}
+{{- $_ := get .Values "garage" | mergeOverwrite $ctx.Values -}}
+{{- $_ = mergeOverwrite $ctx.Values (include "server.hardcodedValues" . | fromYaml) -}}
+
+{{/* Render the templates */}}
+{{ if .Values.garage.enabled }}
+{{ include "bjw-s.common.loader.generate" $ctx }}
+{{ end }}

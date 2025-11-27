@@ -1,0 +1,108 @@
+{{- include "bjw-s.common.loader.init" . }}
+
+{{- define "server.hardcodedValues" -}}
+# Set the nameOverride based on the release name if no override has been set
+{{ if not .Values.opencloud.global.nameOverride }}
+global:
+  nameOverride: "{{ .Release.Name }}"
+{{ end }}
+
+{{ if or .Values.opencloud.global.nameOverride .Values.tika.enabled .Values.collabora.enabled }}
+controllers:
+  main:
+    containers:
+      main:
+        env:
+          {{ if .Values.opencloud.global.nameOverride }}
+          IDM_ADMIN_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.opencloud.global.nameOverride }}-admin-password"
+          NOTIFICATIONS_SMTP_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.opencloud.global.nameOverride }}-smtp-password"
+          STORAGE_USERS_DECOMPOSEDS3_ACCESS_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.opencloud.global.nameOverride }}-s3-secret"
+          STORAGE_USERS_DECOMPOSEDS3_SECRET_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: "{{ .Release.Name }}-{{ .Values.opencloud.global.nameOverride }}-s3-secret"
+          {{ end }}
+          {{ if and .Values.tika.enabled .Values.tika.global.nameOverride }}
+          SEARCH_EXTRACTOR_TYPE: tika
+          SEARCH_EXTRACTOR_TIKA_TIKA_URL: "http://{{ .Release.Name }}-{{ .Values.tika.global.nameOverride }}:9998"
+          FRONTEND_FULL_TEXT_SEARCH_ENABLED: "true"
+          {{ else if .Values.tika.enabled }}
+          SEARCH_EXTRACTOR_TYPE: tika
+          SEARCH_EXTRACTOR_TIKA_TIKA_URL: "http://{{ .Release.Name }}:9998"
+          FRONTEND_FULL_TEXT_SEARCH_ENABLED: "true"
+          {{ end }}
+          {{ if and .Values.collabora.enabled }}
+          COLLABORA_DOMAIN: {{ .Values.config.domain.collabora }}
+          NATS_NATS_HOST: 0.0.0.0
+          NATS_NATS_PORT: "9233"
+          GATEWAY_GRPC_ADDR: "0.0.0.0:9142"
+          FRONTEND_APP_HANDLER_SECURE_VIEW_APP_ADDR: eu.opencloud.api.collaboration
+          GRAPH_AVAILABLE_ROLES: "b1e2218d-eef8-4d4c-b82d-0f1a1b48f3b5,a8d5fe5e-96e3-418d-825b-534dbdf22b99,fb6c3e19-e378-47e5-b277-9732f9de6e21,58c63c02-1d89-4572-916a-870abc5a1b7d,2d00ce52-1fc2-4dbc-8b95-a73b73395f5a,1c996275-f1c9-4e71-abdf-a42f6495e960,312c0871-5ef7-4b3a-85b6-0e4074c64049,aa97fe03-7980-45ac-9e50-b325749fd7e6"
+          {{ end }}
+{{ end }}
+
+configMaps:
+  csp-config:
+    enabled: true
+    data:
+      csp.yaml: |-
+        directives:
+          child-src:
+            - '''self'''
+          connect-src:
+            - '''self'''
+            - 'blob:'
+            - 'https://raw.githubusercontent.com/opencloud-eu/awesome-apps/'
+            - 'https://update.opencloud.eu/'
+          default-src:
+            - '''none'''
+          font-src:
+            - '''self'''
+          frame-ancestors:
+            - '''self'''
+          frame-src:
+            - '''self'''
+            - 'blob:'
+            - 'https://embed.diagrams.net/'
+            - 'https://{{ .Values.config.domain.collabora }}/'
+            # This is needed for the external-sites web extension when embedding sites
+            - 'https://docs.opencloud.eu'
+          img-src:
+            - '''self'''
+            - 'data:'
+            - 'blob:'
+            - 'https://raw.githubusercontent.com/opencloud-eu/awesome-apps/'
+            - 'https://tile.openstreetmap.org/'
+            - 'https://{{ .Values.config.domain.collabora }}/'
+          manifest-src:
+            - '''self'''
+          media-src:
+            - '''self'''
+          object-src:
+            - '''self'''
+            - 'blob:'
+          script-src:
+            - '''self'''
+            - '''unsafe-inline'''
+          style-src:
+            - '''self'''
+            - '''unsafe-inline'''
+{{- end -}}
+
+{{- $ctx := deepCopy . -}}
+{{- $_ := get .Values "opencloud" | mergeOverwrite $ctx.Values -}}
+{{- $_ = mergeOverwrite $ctx.Values (include "server.hardcodedValues" . | fromYaml) -}}
+
+{{/* Render the templates */}}
+{{ if .Values.opencloud.enabled }}
+{{ include "bjw-s.common.loader.generate" $ctx }}
+{{ end }}

@@ -1,0 +1,614 @@
+# * For documentation of the values have a look at [bjw-s-labs common helm chart](https://github.com/bjw-s-labs/helm-charts/blob/main/charts/library/common/values.yaml)
+
+### USER SECTION START ###
+# ! change the following value
+# * use `pwgen -s 40 1` to generate `ADMIN_PASSWORD`
+ADMIN_PASSWORD: "super-secret-password"
+
+# ! configure mail settings as needed
+SMTP_HOST: smtp.gmail.com
+SMTP_PORT: 465
+SMTP_USERNAME: replace-with-smtp-username
+SMTP_PASSWORD: replace-with-smtp-password
+SMTP_SECURE: true
+SMTP_ENCRYPTION: ssltls
+MAIL_FROM_ADDRESS: replace-with-mail-address
+MAIL_FROM_NAME: Opencloud
+
+# ! change the following values to match your external S3 compatible object store
+STORAGE_USERS_DECOMPOSEDS3_ENDPOINT: s3.opencloud.local
+STORAGE_USERS_DECOMPOSEDS3_REGION: default
+STORAGE_USERS_DECOMPOSEDS3_ACCESS_KEY: opencloud
+STORAGE_USERS_DECOMPOSEDS3_SECRET_KEY: opencloud-secret-key
+STORAGE_USERS_DECOMPOSEDS3_BUCKET: opencloud
+STORAGE_USERS_EVENTS_NUM_CONSUMERS: 5
+# do not change
+STORAGE_USERS_DRIVER: decomposeds3
+STORAGE_SYSTEM_DRIVER: decomposed
+
+# ! change the following config values
+config:
+  domain:
+    opencloud: opencloud.local
+    collabora: collabora.local
+    wopiServer: wopiserver.local
+
+  useSelfSigned: false
+  useBasicAuth: true
+
+  collabora:
+    username: admin
+    # ! change the following value
+    # * use `pwgen -s 40 1` to generate `config.collabora.password`
+    password: admin
+
+    # by default setup for ssl termination at the reverse proxy
+    sslEnable: false
+    sslVerify: false
+    sslTerminate: true
+### USER SECTION END ###
+
+# Configuration of the main opencloud deployment
+opencloud:
+  enabled: true
+
+  global:
+    nameOverride: server
+
+  controllers:
+    main:
+      type: deployment
+      strategy: RollingUpdate
+      replicas: 1
+      containers:
+        main:
+          image:
+            repository: opencloudeu/opencloud-rolling
+            tag: "3.7.0"
+          command: ["/bin/sh"]
+          args: ["-c", "opencloud init || true; opencloud server"]
+          env:
+            OC_URL: "https://{{ .Values.config.domain.opencloud }}"
+            OC_LOG_LEVEL: info
+            OC_LOG_COLOR: false
+            OC_LOG_PRETTY: false
+            PROXY_TLS: false
+            OC_INSECURE: "{{ .Values.config.useSelfSigned }}"
+            PROXY_ENABLE_BASIC_AUTH: "{{ .Values.config.useBasicAuth }}"
+            IDM_ADMIN_PASSWORD:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-admin-password"
+                  key: ADMIN_PASSWORD
+            NOTIFICATIONS_SMTP_HOST: "{{ .Values.SMTP_HOST }}"
+            NOTIFICATIONS_SMTP_PORT: "{{ .Values.SMTP_PORT }}"
+            NOTIFICATIONS_SMTP_SENDER: "{{ .Values.MAIL_FROM_NAME }} <{{ .Values.MAIL_FROM_ADDRESS }}>"
+            NOTIFICATIONS_SMTP_USERNAME: "{{ .Values.SMTP_USERNAME }}"
+            NOTIFICATIONS_SMTP_PASSWORD:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-smtp-password"
+                  key: SMTP_PASSWORD
+            NOTIFICATIONS_SMTP_INSECURE: "{{ not .Values.SMTP_SECURE }}"
+            NOTIFICATIONS_SMTP_AUTHENTICATION: auto
+            NOTIFICATIONS_SMTP_ENCRYPTION: "{{ .Values.SMTP_ENCRYPTION }}"
+            PROXY_CSP_CONFIG_FILE_LOCATION: "/etc/opencloud/csp.yaml"
+            OC_SHARING_PUBLIC_SHARE_MUST_HAVE_PASSWORD: true
+            OC_SHARING_PUBLIC_WRITEABLE_SHARE_MUST_HAVE_PASSWORD: true
+            OC_PASSWORD_POLICY_DISABLED: false
+            OC_PASSWORD_POLICY_MIN_CHARACTERS: 8
+            OC_PASSWORD_POLICY_MIN_LOWERCASE_CHARACTERS: 1
+            OC_PASSWORD_POLICY_MIN_UPPERCASE_CHARACTERS: 1
+            OC_PASSWORD_POLICY_MIN_DIGITS: 1
+            OC_PASSWORD_POLICY_MIN_SPECIAL_CHARACTERS: 1
+            STORAGE_SYSTEM_DRIVER: "{{ .Values.STORAGE_SYSTEM_DRIVER }}"
+            STORAGE_SYSTEM_CACHE_STORE: "nats-js-kv"
+            STORAGE_USERS_DRIVER: "{{ .Values.STORAGE_USERS_DRIVER }}"
+            STORAGE_USERS_DECOMPOSEDS3_ENDPOINT: "{{ .Values.STORAGE_USERS_DECOMPOSEDS3_ENDPOINT }}"
+            STORAGE_USERS_DECOMPOSEDS3_REGION: "{{ .Values.STORAGE_USERS_DECOMPOSEDS3_REGION }}"
+            STORAGE_USERS_DECOMPOSEDS3_ACCESS_KEY:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-s3-secret"
+                  key: S3_ACCESS_KEY
+            STORAGE_USERS_DECOMPOSEDS3_SECRET_KEY:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}-s3-secret"
+                  key: S3_SECRET_KEY
+            STORAGE_USERS_DECOMPOSEDS3_BUCKET: "{{ .Values.STORAGE_USERS_DECOMPOSEDS3_BUCKET }}"
+            STORAGE_USERS_EVENTS_NUM_CONSUMERS: "{{ .Values.STORAGE_USERS_EVENTS_NUM_CONSUMERS }}"
+          ports:
+            - name: http
+              containerPort: 9200
+            - name: nats
+              containerPort: 9233
+          # probes:
+          #   liveness:
+          #   readiness:
+          #   startup:
+          # ! set the following value as needed
+          resources: {}
+
+      initContainers:
+        init-config:
+          image:
+            repository: busybox
+            tag: stable
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "mkdir -p /etc/opencloud /var/lib/opencloud"]
+
+  secrets:
+    admin-password:
+      enabled: true
+      stringData:
+        ADMIN_PASSWORD: "{{ .Values.ADMIN_PASSWORD }}"
+
+    smtp-password:
+      enabled: true
+      stringData:
+        SMTP_PASSWORD: "{{ .Values.SMTP_PASSWORD }}"
+
+    s3-secret:
+      enabled: true
+      stringData:
+        S3_ACCESS_KEY: "{{ .Values.STORAGE_USERS_DECOMPOSEDS3_ACCESS_KEY }}"
+        S3_SECRET_KEY: "{{ .Values.STORAGE_USERS_DECOMPOSEDS3_SECRET_KEY }}"
+
+  service:
+    main:
+      enabled: true
+      controller: main
+      primary: true
+      type: ClusterIP
+      ports:
+        http:
+          enabled: true
+          primary: true
+          port: 9200
+          targetPort: http
+          protocol: HTTP
+        nats:
+          enabled: true
+          port: 9233
+          targetPort: nats
+          protocol: TCP
+
+  ingress:
+    main:
+      enabled: false
+      # ! add additional proxy annotations
+      # annotations:
+      ### nginx.ingress.kubernetes.io/proxy-body-size: "100M"
+      # sample annotations for adequate timeout values to support websockets
+      ### nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      ### nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      # ! set `className` if not the default ingress class should be used
+      # className: ingress-class-name
+      hosts:
+        - host: "{{ .Values.config.domain.opencloud }}"
+          paths:
+            - path: "/"
+              service:
+                identifier: main
+      tls:
+        - secretName: "{{ .Release.Name }}-server-cert"
+          hosts:
+            - "{{ .Values.config.domain.opencloud }}"
+
+  route:
+    main:
+      enabled: false
+      kind: HTTPRoute
+      # ! set the gateway to connect in `parentRefs`
+      # parentRefs:
+      #   - group: gateway.networking.k8s.io
+      #     kind: Gateway
+      #     name:
+      #     namespace:
+      #     sectionName: https
+      hostnames:
+        - "{{ .Values.config.domain.opencloud }}"
+      rules:
+        - backendRefs:
+            - identifier: main
+          matches:
+            - path:
+                type: PathPrefix
+                value: /
+          # ! if you want to add filters you must override the complete rules section
+          # filters:
+          #   - type: ResponseHeaderModifier
+          #     responseHeaderModifier:
+          #       remove:
+          #         - X-Powered-By
+          #         - Server
+          #       add:
+          #         - name: X-Frame-Options
+          #           value: SAMEORIGIN
+          #         - name: Content-Security-Policy
+          #           value: "frame-ancestors 'self';"
+          #         - name: Strict-Transport-Security
+          #           value: "max-age=15552001; includeSubdomains; preload"
+
+  persistence:
+    config:
+      enabled: true
+      type: persistentVolumeClaim
+      # ! set `storageClass` if not the default storage class should be used
+      # storageClass: storage-class-name
+      # ! set `existingClaim` if you provide the PVC externally
+      # existingClaim: "{{ .Release.Name }}-config-pvc"
+      accessMode: ReadWriteMany
+      size: 1Gi
+      retain: true
+      advancedMounts:
+        main:
+          init-config:
+            - path: /etc/opencloud
+              readOnly: false
+          main:
+            - path: /etc/opencloud
+              readOnly: false
+
+    csp:
+      enabled: true
+      type: configMap
+      identifier: csp-config
+      advancedMounts:
+        main:
+          main:
+            - path: /etc/opencloud/csp.yaml
+              subPath: csp.yaml
+              readOnly: false
+
+    data:
+      enabled: true
+      type: persistentVolumeClaim
+      # ! set `storageClass` if not the default storage class should be used
+      # storageClass: storage-class-name
+      # ! set `existingClaim` if you provide the PVC externally
+      # existingClaim: "{{ .Release.Name }}-data-pvc"
+      accessMode: ReadWriteMany
+      size: 5Gi
+      retain: true
+      advancedMounts:
+        main:
+          init-config:
+            - path: /var/lib/opencloud
+              readOnly: false
+          main:
+            - path: /var/lib/opencloud
+              readOnly: false
+
+# Tika is used for in text search if enabled
+tika:
+  enabled: true
+
+  global:
+    nameOverride: tika
+
+  controllers:
+    main:
+      type: deployment
+      strategy: RollingUpdate
+      replicas: 1
+      containers:
+        main:
+          image:
+            repository: apache/tika
+            tag: "3.2.3.0-full"
+            pullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 9998
+              protocol: TCP
+          # probes:
+          #   liveness:
+          #   readiness:
+          #   startup:
+          # ! set the following value as needed
+          resources: {}
+
+  service:
+    main:
+      enabled: true
+      controller: main
+      primary: true
+      type: ClusterIP
+      ports:
+        http:
+          enabled: true
+          primary: true
+          port: 9998
+          targetPort: http
+          protocol: HTTP
+
+collaboration:
+  # automatically enabled if collabora is enabled
+
+  global:
+    nameOverride: collaboration
+
+  controllers:
+    main:
+      type: deployment
+      strategy: RollingUpdate
+      replicas: 1
+      containers:
+        main:
+          image:
+            repository: opencloudeu/opencloud-rolling
+            tag: "3.7.0"
+          command: ["/bin/sh"]
+          args: ["-c", "opencloud collaboration server"]
+          env:
+            COLLABORATION_GRPC_ADDR: 0.0.0.0:9301
+            COLLABORATION_HTTP_ADDR: 0.0.0.0:9300
+            MICRO_REGISTRY: "nats-js-kv"
+            MICRO_REGISTRY_ADDRESS: "{{ .Release.Name }}:9233"
+            COLLABORATION_WOPI_SRC: "https://{{ .Values.config.domain.wopiServer }}"
+            COLLABORATION_APP_NAME: "CollaboraOnline"
+            COLLABORATION_APP_PRODUCT: "Collabora"
+            COLLABORATION_APP_ADDR: "https://{{ .Values.config.domain.collabora }}"
+            COLLABORATION_APP_ICON: "https://{{ .Values.config.domain.collabora }}/favicon.ico"
+            COLLABORATION_APP_INSECURE: "{{ .Values.config.useSelfSigned }}"
+            COLLABORATION_CS3API_DATAGATEWAY_INSECURE: "{{ .Values.config.useSelfSigned }}"
+            COLLABORATION_LOG_LEVEL: info
+            OC_URL: https://{{ .Values.config.domain.opencloud }}
+          ports:
+            - name: http
+              containerPort: 9300
+              protocol: TCP
+            - name: grpc
+              containerPort: 9301
+              protocol: TCP
+          # probes:
+          #   liveness:
+          #   readiness:
+          #   startup:
+          # ! set the following value as needed
+          resources: {}
+
+      initContainers:
+        wait-for-opencloud:
+          image:
+            repository: busybox
+            tag: stable
+          imagePullPolicy: IfNotPresent
+          command:
+            [
+              "sh",
+              "-c",
+              "until wget -q -O- http://{{ .Release.Name }}:9200/health; do echo waiting for opencloud; sleep 5; done;",
+            ]
+        wait-for-collabora:
+          image:
+            repository: busybox
+            tag: stable
+          imagePullPolicy: IfNotPresent
+          command:
+            [
+              "sh",
+              "-c",
+              "until wget -q -O- http://{{ .Release.Name }}:9980/hosting/discovery; do echo waiting for collabora; sleep 2; done;",
+            ]
+
+  service:
+    main:
+      enabled: true
+      controller: main
+      primary: true
+      type: ClusterIP
+      ports:
+        http:
+          enabled: true
+          primary: true
+          port: 9300
+          targetPort: http
+          protocol: HTTP
+        grpc:
+          enabled: true
+          port: 9301
+          targetPort: grpc
+          protocol: TCP
+
+  ingress:
+    main:
+      enabled: false
+      # ! add additional proxy annotations
+      # annotations:
+      ### nginx.ingress.kubernetes.io/proxy-body-size: "100M"
+      # sample annotations for adequate timeout values to support websockets
+      ### nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      ### nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      # ! set `className` if not the default ingress class should be used
+      # className: ingress-class-name
+      hosts:
+        - host: "{{ .Values.config.domain.wapiServer }}"
+          paths:
+            - path: "/"
+              service:
+                identifier: main
+      tls:
+        - secretName: "{{ .Release.Name }}-collaboration-cert"
+          hosts:
+            - "{{ .Values.config.domain.wopiServer }}"
+
+  route:
+    main:
+      enabled: false
+      kind: HTTPRoute
+      # ! set the gateway to connect in `parentRefs`
+      # parentRefs:
+      #   - group: gateway.networking.k8s.io
+      #     kind: Gateway
+      #     name:
+      #     namespace:
+      #     sectionName: https
+      hostnames:
+        - "{{ .Values.config.domain.wopiServer }}"
+      rules:
+        - backendRefs:
+            - identifier: main
+          matches:
+            - path:
+                type: PathPrefix
+                value: /
+          # ! if you want to add filters you must override the complete rules section
+          # filters:
+          #   - type: ResponseHeaderModifier
+          #     responseHeaderModifier:
+          #       remove:
+          #         - X-Powered-By
+          #         - Server
+          #       add:
+          #         - name: X-Frame-Options
+          #           value: SAMEORIGIN
+          #         - name: Content-Security-Policy
+          #           value: "frame-ancestors 'self';"
+          #         - name: Strict-Transport-Security
+          #           value: "max-age=15552001; includeSubdomains; preload"
+
+  persistence:
+    config:
+      enabled: true
+      type: persistentVolumeClaim
+      existingClaim: "{{ .Release.Name }}-config"
+      advancedMounts:
+        main:
+          main:
+            - path: /etc/opencloud
+              readOnly: false
+
+collabora:
+  enabled: true
+
+  global:
+    nameOverride: collabora
+
+  controllers:
+    main:
+      type: deployment
+      strategy: RollingUpdate
+      replicas: 1
+      containers:
+        main:
+          image:
+            repository: collabora/code
+            tag: "25.04.7.2.1"
+          command: ["/bin/sh"]
+          args:
+            [
+              "-c",
+              "coolconfig generate-proof-key && /start-collabora-online.sh",
+            ]
+          env:
+            aliasgroup1: "http://{{ .Release.Name }}:9300,https://{{ .Values.config.domain.wopiServer }}"
+            DONT_GEN_SSL_CERT: "YES"
+            extra_params: |
+              --o:ssl.enable={{ .Values.config.collabora.sslEnable }} \
+              --o:ssl.ssl_verification={{ .Values.config.collabora.sslVerify }} \
+              --o:ssl.termination={{ .Values.config.collabora.sslTerminate }} \
+              --o:welcome.enable=false \
+              --o:net.frame_ancestors={{ .Values.config.domain.opencloud }} \
+              --o:net.lok_allow.host[14]={{ .Values.config.domain.opencloud }} \
+              --o:home_mode.enable=false
+            username:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}"
+                  key: username
+            password:
+              valueFrom:
+                secretKeyRef:
+                  name: "{{ .Release.Name }}"
+                  key: password
+          ports:
+            - name: http
+              containerPort: 9980
+              protocol: TCP
+          # probes:
+          #   liveness:
+          #   readiness:
+          #   startup:
+          # ! set the following value as needed
+          resources: {}
+
+  secrets:
+    admin-user:
+      enabled: true
+      stringData:
+        username: "{{ .Values.config.collabora.username }}"
+        password: "{{ .Values.config.collabora.password }}"
+
+  service:
+    main:
+      enabled: true
+      controller: main
+      primary: true
+      type: ClusterIP
+      ports:
+        http:
+          enabled: true
+          primary: true
+          port: 9980
+          targetPort: http
+          protocol: HTTP
+
+  ingress:
+    main:
+      enabled: false
+      # ! add additional proxy annotations
+      # annotations:
+      ### nginx.ingress.kubernetes.io/proxy-body-size: "100M"
+      # sample annotations for adequate timeout values to support websockets
+      ### nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+      ### nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+      # ! set `className` if not the default ingress class should be used
+      # className: ingress-class-name
+      hosts:
+        - host: "{{ .Values.config.domain.collabora }}"
+          paths:
+            - path: "/"
+              service:
+                identifier: main
+      tls:
+        - secretName: "{{ .Release.Name }}-cert"
+          hosts:
+            - "{{ .Values.config.domain.collabora }}"
+
+  route:
+    main:
+      enabled: false
+      kind: HTTPRoute
+      # ! set the gateway to connect in `parentRefs`
+      # parentRefs:
+      #   - group: gateway.networking.k8s.io
+      #     kind: Gateway
+      #     name:
+      #     namespace:
+      #     sectionName: https
+      hostnames:
+        - "{{ .Values.config.domain.collabora }}"
+      rules:
+        - backendRefs:
+            - identifier: main
+          matches:
+            - path:
+                type: PathPrefix
+                value: /
+          # ! if you want to add filters you must override the complete rules section
+          # filters:
+          #   - type: ResponseHeaderModifier
+          #     responseHeaderModifier:
+          #       remove:
+          #         - X-Powered-By
+          #         - Server
+          #       add:
+          #         - name: X-Frame-Options
+          #           value: SAMEORIGIN
+          #         - name: Content-Security-Policy
+          #           value: "frame-ancestors 'self';"
+          #         - name: Strict-Transport-Security
+          #           value: "max-age=15552001; includeSubdomains; preload"

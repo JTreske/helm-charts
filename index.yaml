@@ -118,6 +118,23 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/garage-0.1.0/garage-0.1.0.tgz
     version: 0.1.0
+  opencloud:
+  - apiVersion: v2
+    appVersion: 3.7.0
+    created: "2025-11-27T21:48:31.312638838Z"
+    dependencies:
+    - name: common
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.3.0
+    description: OpenCloud is an open-source file sharing and collaboration solution
+    digest: dc0ebc68c8a7698e07a3e0b95b416dcc6ca32be35b72166c4619bd902acf9558
+    maintainers:
+    - name: JTreske
+    name: opencloud
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/opencloud-0.1.0/opencloud-0.1.0.tgz
+    version: 0.1.0
   paperless:
   - apiVersion: v2
     appVersion: 2.19.6
@@ -190,4 +207,4 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/tandoor-0.1.0/tandoor-0.1.0.tgz
     version: 0.1.0
-generated: "2025-11-21T19:45:30.958357202Z"
+generated: "2025-11-27T21:48:31.312662613Z"

@@ -98,14 +98,16 @@ cluster:
       #       apiGroup: snapshot.storage.k8s.io
       # database: app
       # owner: database
-      # secret: ""
+      # secret:
+      #   name: ""
 
     # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-BootstrapPgBaseBackup
     pg_basebackup: {}
       # source: source-db
       # database: app
       # owner: database
-      # secret: ""
+      # secret:
+      #   name: ""
 
   # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-ReplicaClusterConfiguration
   replica: {}

@@ -1,0 +1,235 @@
+cluster:
+  additionalLabels: {}
+  additionalAnnotations: {}
+
+  # Description of this PostgreSQL cluster
+  description: ""
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-EmbeddedObjectMetadata
+  inheritedMetadata: {}
+
+  # Name of the container image, supporting both tags (<image>:<tag>) and digests for deterministic and repeatable deployments (<image>:<tag>@sha256:<digestValue>)
+  # `imageName` takes precedence over `imageCatalogRef`
+  imageName: ""
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-ImageCatalogRef
+  imageCatalogRef: {}
+    # kind: ImageCatalog
+    # name: postgresql
+    # major: 18
+  # One of Always, Never or IfNotPresent
+  imagePullPolicy: IfNotPresent
+
+  # If specified, the pod will be dispatched by specified Kubernetes scheduler
+  # If not specified, the pod will be dispatched by the default scheduler
+  # See: https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/
+  schedulerName: ""
+
+  postgresUID: 26
+  postgresGID: 26
+
+  instances: 1
+  # Minimum number of instances required in synchronous replication with the primary
+  # Undefined or 0 allow writes to complete when no standby is available
+  minSyncReplicas: 0
+  # The target value for the synchronous replication quorum, that can be decreased if the number of ready standbys is lower than this
+  # Undefined or 0 disable synchronous replication
+  maxSyncReplicas: 0
+
+  postgresql:
+    # PostgreSQL configuration options (postgresql.conf)
+    parameters: {}
+
+    # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-SynchronousReplicaConfiguration
+    synchronous: {}
+
+    # PostgreSQL Host Based Authentication rules (lines to be appended to the pg_hba.conf file)
+    pg_hba: []
+
+    # PostgreSQL User Name Maps rules (lines to be appended to the pg_ident.conf file)
+    pg_ident: []
+
+    # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-SyncReplicaElectionConstraints
+    syncReplicaElectionConstraint: {}
+
+    # Lists of shared preload libraries to add to the default ones
+    shared_preload_libraries: []
+
+    # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-LDAPConfig
+    ldap: {}
+
+    # Specifies the maximum number of seconds to wait when promoting an instance to primary. Default value is 40000000, greater than one year in seconds, big enough to simulate an infinite timeout
+    promotionTimeout: 40000000
+
+    # If this parameter is true, the user will be able to invoke ALTER SYSTEM on this CloudNativePG Cluster. This should only be used for debugging and troubleshooting. Defaults to false.
+    enableAlterSystem: false
+
+    # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-ExtensionConfiguration
+    extensions: []
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-ReplicationSlotsConfiguration
+  replicationSlots: {}
+
+  bootstrap:
+    # One of initdb, recovery, and pg_basebackup
+    mode: initdb
+
+    # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-BootstrapInitDB
+    initdb: {}
+      # database: app
+      # owner: database
+      # secret:
+      #   name: ""
+
+    # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-BootstrapRecovery
+    recovery: {}
+      # volumeSnapshots:
+      #   storage:
+      #     name: database-storage-backup-snapshot
+      #     kind: VolumeSnapshot
+      #     apiGroup: snapshot.storage.k8s.io
+      #   walStorage:
+      #     name: database-wal-backup-snapshot
+      #     kind: VolumeSnapshot
+      #     apiGroup: snapshot.storage.k8s.io
+      #   tablespaceStorage:
+      #     main:
+      #       name: database-tablespace-backup-snapshot
+      #       kind: VolumeSnapshot
+      #       apiGroup: snapshot.storage.k8s.io
+      # database: app
+      # owner: database
+      # secret: ""
+
+    # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-BootstrapPgBaseBackup
+    pg_basebackup: {}
+      # source: source-db
+      # database: app
+      # owner: database
+      # secret: ""
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-ReplicaClusterConfiguration
+  replica: {}
+
+  # If left empty the operator will automatically create one
+  superuserSecretName: ""
+  enableSuperuserAccess: true
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-CertificatesConfiguration
+  certificates: {}
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-LocalObjectReference
+  imagePullSecrets: []
+
+  storage:
+    size: 2Gi
+    storageClass: ""
+    resizeInUseVolumes: true
+    # See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.28/#persistentvolumeclaimspec-v1-core
+    pvcTemplate: {}
+
+  walStorage:
+    enabled: false
+    size: 2Gi
+    storageClass: ""
+    resizeInUseVolumes: true
+    # See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.28/#persistentvolumeclaimspec-v1-core
+    pvcTemplate: {}
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-ServiceAccountTemplate
+  serviceAccountTemplate: {}
+
+  # The time in seconds that is allowed for a PostgreSQL instance to successfully start up
+  startDelay: 3600
+  # The time in seconds that is allowed for a PostgreSQL instance to gracefully shutdown
+  stopDelay: 1800
+  # The time in seconds that controls the window of time reserved for the smart shutdown of Postgres to complete
+  # Make sure you reserve enough time for the operator to request a fast shutdown of Postgres (that is: stopDelay - smartShutdownTimeout)
+  smartShutdownTimeout: 180
+  # The time in seconds that is allowed for a primary PostgreSQL instance to gracefully shutdown during a switchover
+  switchoverDelay: 3600
+  # The amount of time (in seconds) to wait before triggering a failover after the primary PostgreSQL instance in the cluster was detected to be unhealthy
+  failoverDelay: 30
+  # LivenessProbeTimeout is the time (in seconds) that is allowed for a PostgreSQL instance to successfully respond to the liveness probe
+  livenessProbeTimeout: 30
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-AffinityConfiguration
+  affinity:
+    topologyKey: topology.kubernetes.io/zone
+
+  # TopologySpreadConstraints specifies how to spread matching pods among the given topology
+  # See: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+  topologySpreadConstraints: []
+
+  # See: https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/
+  resources: {}
+    # limits:
+    #   cpu: 2000m
+    #   memory: 8Gi
+    # requests:
+    #   cpu: 2000m
+    #   memory: 8Gi
+
+  priorityClassName: ""
+
+  primaryUpdateStrategy: unsupervised
+  primaryUpdateMethod: switchover
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-BackupConfiguration
+  backup: {}
+    # volumeSnapshot:
+    #   className: database-storage-backup-snapshot-class
+    #   walClassName: database-wal-backup-snapshot-class
+    #   tablespaceClassName: database-tablespace-backup-snapshot-class
+    #   online: true
+    # retentionPolicy: "14d"
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-NodeMaintenanceWindow
+  nodeMaintenanceWindow: {}
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-MonitoringConfiguration
+  monitoring: {}
+    # disableDefaultQueries: false
+    # customQueriesConfigMap: []
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-ExternalCluster
+  externalClusters: []
+
+  logLevel: info
+
+  # Template to be used to define projected volumes, projected volumes will be mounted under /projected base folder
+  # See: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.28/#projectedvolumesource-v1-core
+  projectedVolumeTemplate: {}
+
+  env: []
+  envFrom: []
+
+  managed:
+    # See: https://cloudnative-pg.io/documentation/current/service_management/
+    services: {}
+
+    # See: https://cloudnative-pg.io/documentation/current/declarative_role_management/
+    roles: []
+      # - name: <username>
+      #   ensure: present
+      #   comment: <comment>
+      #   login: true
+      #   superuser: false
+      #   inRoles:
+      #     - pg_monitor
+      #     - pg_signal_backend
+
+  # The SeccompProfile applied to every Pod and Container
+  # Defaults to: RuntimeDefault
+  seccompProfile: {}
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-TablespaceConfiguration
+  tablespaces: []
+
+  # See: https://cloudnative-pg.io/documentation/current/kubernetes_upgrade/#pod-disruption-budgets
+  enablePDB: true
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-PluginConfiguration
+  plugins: []
+
+  # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-ProbesConfiguration
+  probes: {}

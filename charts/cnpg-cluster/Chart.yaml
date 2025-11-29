@@ -1,0 +1,7 @@
+apiVersion: v2
+name: cnpg-cluster
+description: Deploys and manages a CloudNativePG cluster and its associated resources.
+type: application
+version: 0.1.0
+maintainers:
+  - name: JTreske

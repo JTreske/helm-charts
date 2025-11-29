@@ -1,0 +1,266 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Release.Name }}-cluster
+  namespace: {{ .Release.Namespace }}
+  labels:
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    app.kubernetes.io/name: cluster
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/part-of: cloudnative-pg
+    app.kubernetes.io/managed-by: Helm
+    {{- with .Values.cluster.additionalLabels }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.cluster.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if .Values.cluster.description }}
+  description: {{ .Values.cluster.description }}
+  {{- end }}
+
+  {{- with .Values.cluster.inheritedMetadata }}
+  inheritedMetadata:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- if .Values.cluster.imageName }}
+  imageName: {{ .Values.cluster.imageName }}
+  {{- else }}
+  {{- with .Values.cluster.imageCatalogRef }}
+  imageCatalogRef:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- end }}
+  imagePullPolicy: {{ .Values.cluster.imagePullPolicy }}
+
+  {{- if .Values.cluster.schedulerName }}
+  schedulerName: {{ .Values.cluster.schedulerName }}
+  {{- end }}
+  
+  postgresUID: {{ .Values.cluster.postgresUID }}
+  postgresGID: {{ .Values.cluster.postgresGID }}
+  
+  instances: {{ .Values.cluster.instances }}
+  minSyncReplicas: {{ .Values.cluster.minSyncReplicas }}
+  maxSyncReplicas: {{ .Values.cluster.maxSyncReplicas }}
+
+  postgresql:
+    {{- with .Values.cluster.postgresql.parameters }}
+    parameters:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.cluster.postgresql.synchronous }}
+    synchronous:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.cluster.postgresql.pg_hba }}
+    pg_hba:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.cluster.postgresql.pg_ident }}
+    pg_ident:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.cluster.postgresql.syncReplicaElectionConstraint }}
+    syncReplicaElectionConstraint:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.cluster.postgresql.shared_preload_libraries }}
+    shared_preload_libraries:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.cluster.postgresql.ldap }}
+    ldap:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.cluster.postgresql.promotionTimeout }}
+    promotionTimeout:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.cluster.postgresql.enableAlterSystem }}
+    enableAlterSystem:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.cluster.postgresql.extensions }}
+    extensions:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+  {{- with .Values.cluster.replicationSlots }}
+  replicationSlots:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- if or (and .Values.cluster.bootstrap.initdb (eq .Values.cluster.bootstrap.mode "initdb")) (and .Values.cluster.bootstrap.recovery (eq .Values.cluster.bootstrap.mode "recovery")) (and .Values.cluster.bootstrap.pg_basebackup (eq .Values.cluster.bootstrap.mode "pg_basebackup")) }}
+  bootstrap:
+    {{- if eq .Values.cluster.bootstrap.mode "initdb" }}
+    {{- with .Values.cluster.bootstrap.initdb }}
+    initdb:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- end }}
+    {{- if eq .Values.cluster.bootstrap.mode "recovery" }}
+    {{- with .Values.cluster.bootstrap.recovery }}
+    recovery:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- end }}
+    {{- if eq .Values.cluster.bootstrap.mode "pg_basebackup" }}
+    {{- with .Values.cluster.bootstrap.pg_basebackup }}
+    pg_basebackup:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- end }}
+  {{- end }}
+
+  {{- with .Values.cluster.replica }}
+  replica:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.cluster.superuserSecret }}
+  superuserSecret:
+    name: {{ . }}
+  {{ end }}
+  enableSuperuserAccess: {{ .Values.cluster.enableSuperuserAccess }}
+
+  {{- with .Values.cluster.certificates }}
+  certificates:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.cluster.imagePullSecrets }}
+  imagePullSecrets:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  storage:
+    size: {{ .Values.cluster.storage.size }}
+    {{- if not (empty .Values.cluster.storage.storageClass) }}
+    storageClass: {{ .Values.cluster.storage.storageClass }}
+    {{- end }}
+    resizeInUseVolumes: {{ .Values.cluster.storage.resizeInUseVolumes }}
+    {{- with .Values.cluster.storage.pvcTemplate }}
+    pvcTemplate:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+  {{- if .Values.cluster.walStorage.enabled }}
+  walStorage:
+    size: {{ .Values.cluster.walStorage.size }}
+    {{- if not (empty .Values.cluster.walStorage.storageClass) }}
+    storageClass: {{ .Values.cluster.walStorage.storageClass }}
+    {{- end }}
+    resizeInUseVolumes: {{ .Values.cluster.walStorage.resizeInUseVolumes }}
+    {{- with .Values.cluster.walStorage.pvcTemplate }}
+    pvcTemplate:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+
+  {{- with .Values.cluster.serviceAccountTemplate }}
+  serviceAccountTemplate:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  startDelay: {{ .Values.cluster.startDelay }}
+  stopDelay: {{ .Values.cluster.stopDelay }}
+  smartShutdownTimeout: {{ .Values.cluster.smartShutdownTimeout }}
+  switchoverDelay: {{ .Values.cluster.switchoverDelay }}
+  failoverDelay: {{ .Values.cluster.failoverDelay }}
+  livenessProbeTimeout: {{ .Values.cluster.livenessProbeTimeout }}
+
+  {{- with .Values.cluster.affinity }}
+  affinity:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.cluster.topologySpreadConstraints }}
+  topologySpreadConstraints:
+    {{- toYaml . | nindent 4 }}
+  {{ end }}
+
+  {{- with .Values.cluster.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{ end }}
+
+  {{- if .Values.cluster.priorityClassName }}
+  priorityClassName: {{ .Values.cluster.priorityClassName }}
+  {{- end }}
+
+  primaryUpdateStrategy: {{ .Values.cluster.primaryUpdateStrategy }}
+  primaryUpdateMethod: {{ .Values.cluster.primaryUpdateMethod }}
+
+  {{- with .Values.cluster.backup }}
+  backup:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.cluster.nodeMaintenanceWindow }}
+  nodeMaintenanceWindow:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.cluster.monitoring }}
+  monitoring:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.cluster.externalClusters }}
+  externalClusters:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  logLevel: {{ .Values.cluster.logLevel }}
+
+  {{- with .Values.cluster.projectedVolumeTemplate }}
+  projectedVolumeTemplate:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.cluster.env }}
+  env:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.cluster.envFrom }}
+  envFrom:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  
+  {{- if or .Values.cluster.managed.roles .Values.cluster.managed.services }}
+  managed:
+    {{- with .Values.cluster.managed.services }}
+    services:
+      {{- toYaml . | nindent 6 }}
+    {{ end }}
+    {{- with .Values.cluster.managed.roles }}
+    roles:
+      {{- toYaml . | nindent 6 }}
+    {{ end }}
+  {{- end }}
+
+  {{- with .Values.cluster.seccompProfile }}
+  seccompProfile:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.cluster.tablespaces }}
+  tablespaces:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  enablePDB: {{ .Values.cluster.enablePDB }}
+
+  {{- with .Values.cluster.plugins }}
+  plugins:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.cluster.probes }}
+  probes:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}

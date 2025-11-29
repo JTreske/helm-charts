@@ -35,6 +35,18 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/audiobookshelf-0.1.1/audiobookshelf-0.1.1.tgz
     version: 0.1.1
+  cnpg-cluster:
+  - apiVersion: v2
+    created: "2025-11-29T12:48:39.839736338Z"
+    description: Deploys and manages a CloudNativePG cluster and its associated resources.
+    digest: c37ba4f597cbbac8e96a747dea5bf10d3d18fb3b2c741bc59a2f67fec2f3bce3
+    maintainers:
+    - name: JTreske
+    name: cnpg-cluster
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/cnpg-cluster-0.1.0/cnpg-cluster-0.1.0.tgz
+    version: 0.1.0
   docmost:
   - apiVersion: v2
     appVersion: 0.23.2
@@ -207,4 +219,4 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/tandoor-0.1.0/tandoor-0.1.0.tgz
     version: 0.1.0
-generated: "2025-11-27T21:48:31.312662613Z"
+generated: "2025-11-29T12:48:39.839757127Z"

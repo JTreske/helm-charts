@@ -1,0 +1,47 @@
+{{- $root := . }}
+{{- range $k, $v := .Values.scheduledBackup }}
+{{- if $v.enabled }}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: "{{ $root.Release.Name }}-{{ $k }}"
+  namespace: {{ $root.Release.Namespace }}
+  labels:
+    helm.sh/chart: "{{ $root.Chart.Name }}-{{ $root.Chart.Version }}"
+    app.kubernetes.io/name: cluster
+    app.kubernetes.io/instance: {{ $root.Release.Name }}
+    app.kubernetes.io/part-of: cloudnative-pg
+    app.kubernetes.io/managed-by: Helm
+spec:
+  {{- if hasKey $v "suspend" }}
+  suspend: {{ $v.suspend }}
+  {{- end }}
+  {{- if hasKey $v "immediate" }}
+  immediate: {{ $v.immediate }}
+  {{- end }}
+  schedule: {{ $v.schedule }}
+  cluster:
+    name: {{ $root.Release.Name }}-cluster
+  {{- if hasKey $v "backupOwnerReference" }}
+  backupOwnerReference: {{ $v.backupOwnerReference }}
+  {{- end }}
+  {{- if hasKey $v "target" }}
+  target: {{ $v.target }}
+  {{- end }}
+  {{- if hasKey $v "method" }}
+  method: {{ $v.method }}
+  {{- end }}
+  {{- with $v.pluginConfiguration }}
+  pluginConfiguration:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- if hasKey $v "online" }}
+  online: {{ $v.online }}
+  {{- end }}
+  {{- with $v.onlineConfiguration }}
+  onlineConfiguration:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- end }}

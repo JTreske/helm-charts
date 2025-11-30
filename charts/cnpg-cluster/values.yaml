@@ -235,3 +235,15 @@ cluster:
 
   # See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-ProbesConfiguration
   probes: {}
+
+# Definition of the scheduled backups
+# Keys are used as an addition to the name of the `ScheduledBackup` instance
+# See: https://cloudnative-pg.io/documentation/current/cloudnative-pg.v1/#postgresql-cnpg-io-v1-ScheduledBackup
+scheduledBackup: {}
+  # daily:
+  #   enabled: true
+  #   suspend: false
+  #   immediate: false
+  #   schedule: "0 0 0 * * *"
+  #   backupOwnerReference: self
+  #   method: volumeSnapshot

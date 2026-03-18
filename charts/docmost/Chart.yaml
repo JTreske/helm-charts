@@ -2,8 +2,8 @@ apiVersion: v2
 name: docmost
 description: Docmost is an open-source collaborative wiki and documentation software.
 type: application
-version: 0.2.0
-appVersion: "0.23.2"
+version: 0.3.0
+appVersion: "0.70.3"
 dependencies:
   - name: common
     version: 4.3.0

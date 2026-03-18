@@ -64,6 +64,13 @@ garage:
   global:
     nameOverride: server
 
+  defaultPodOptions:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+
   controllers:
     main:
       type: deployment
@@ -75,8 +82,8 @@ garage:
       containers:
         main:
           image:
-            repository: dxflrs/amd64_garage
-            tag: "v2.1.0"
+            repository: dxflrs/garage
+            tag: "v2.2.0"
             pullPolicy: IfNotPresent
           ports:
             - name: s3-api
@@ -362,6 +369,20 @@ garage:
               subPath: garage.toml
               readOnly: true
 
+  # ! configure as needed
+  networkpolicies:
+    main:
+      enabled: true
+      controller: main
+      policyTypes:
+        - Ingress
+        - Egress
+      rules:
+        ingress:
+          - {}
+        egress:
+          - {}
+
   rbac:
     roles:
       crdRole:
@@ -392,6 +413,13 @@ webui:
 
   global:
     nameOverride: webui
+
+  defaultPodOptions:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
 
   controllers:
     main:
@@ -473,7 +501,7 @@ webui:
               service:
                 identifier: main
       tls:
-        - secreetName: "{{ .Release.Name }}-cert"
+        - secretName: "{{ .Release.Name }}-webui-cert"
           hosts:
             - "{{ .Values.config.domain.webui }}"
 
@@ -537,3 +565,17 @@ webui:
             - path: /etc/garage.toml
               subPath: garage.toml
               readOnly: true
+
+  # ! configure as needed
+  networkpolicies:
+    main:
+      enabled: true
+      controller: main
+      policyTypes:
+        - Ingress
+        - Egress
+      rules:
+        ingress:
+          - {}
+        egress:
+          - {}

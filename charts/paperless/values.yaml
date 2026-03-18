@@ -29,6 +29,13 @@ paperless:
   global:
     nameOverride: server
 
+  defaultPodOptions:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+
   controllers:
     main:
       type: deployment
@@ -38,7 +45,7 @@ paperless:
         main:
           image:
             repository: ghcr.io/paperless-ngx/paperless-ngx
-            tag: "2.19.6"
+            tag: "2.20.11"
             pullPolicy: IfNotPresent
           env:
             PAPERLESS_URL: "{{ .Values.APP_URL }}"
@@ -116,7 +123,7 @@ paperless:
               service:
                 identifier: main
       tls:
-        - secreetName: "{{ .Release.Name }}-cert"
+        - secretName: "{{ .Release.Name }}-cert"
           hosts:
             - "{{ .Values.DOMAIN }}"
 
@@ -196,11 +203,32 @@ paperless:
       enabled: true
       type: emptyDir
 
+  # ! configure as needed
+  networkpolicies:
+    main:
+      enabled: true
+      controller: main
+      policyTypes:
+        - Ingress
+        - Egress
+      rules:
+        ingress:
+          - {}
+        egress:
+          - {}
+
 valkey:
   enabled: true
 
   global:
     nameOverride: valkey
+
+  defaultPodOptions:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
 
   controllers:
     main:
@@ -211,7 +239,7 @@ valkey:
         main:
           image:
             repository: valkey/valkey
-            tag: "9.0-alpine"
+            tag: "9.1-alpine"
             pullPolicy: IfNotPresent
           ports:
             - name: redis
@@ -286,12 +314,39 @@ valkey:
       # ! set `storageClass` if not the default provider should be used
       # storageClass: storage-provider-name
 
+  networkpolicies:
+    main:
+      enabled: true
+      controller: main
+      policyTypes:
+        - Ingress
+        - Egress
+      rules:
+        ingress:
+          # allow communication only from paperless server pods
+          - from:
+              - podSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: "{{ .Release.Name }}"
+                    app.kubernetes.io/name: server
+            ports:
+              - protocol: TCP
+                port: 6379
+          # deny all egress communication
+
 tika:
   enabled: true
 
   gotenberg:
     global:
       nameOverride: gotenberg
+
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
 
     controllers:
       main:
@@ -302,7 +357,7 @@ tika:
           main:
             image:
               repository: gotenberg/gotenberg
-              tag: "8.24"
+              tag: "8.27"
               pullPolicy: IfNotPresent
             command:
               - "gotenberg"
@@ -333,9 +388,37 @@ tika:
             targetPort: http
             protocol: HTTP
 
+    # ! configure as needed
+    networkpolicies:
+      main:
+        enabled: true
+        controller: main
+        policyTypes:
+          - Ingress
+          - Egress
+        rules:
+          ingress:
+            # allow communication only from paperless server pods
+            - from:
+                - podSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: "{{ .Release.Name }}"
+                      app.kubernetes.io/name: server
+              ports:
+                - protocol: TCP
+                  port: 3000
+            # deny all egress communication
+
   tika:
     global:
       nameOverride: tika
+
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
 
     controllers:
       main:
@@ -372,6 +455,26 @@ tika:
             port: 9998
             targetPort: http
             protocol: HTTP
+
+    networkpolicies:
+      main:
+        enabled: true
+        controller: main
+        policyTypes:
+          - Ingress
+          - Egress
+        rules:
+          ingress:
+            # allow communication only from paperless server pods
+            - from:
+                - podSelector:
+                    matchLabels:
+                      app.kubernetes.io/instance: "{{ .Release.Name }}"
+                      app.kubernetes.io/name: server
+              ports:
+                - protocol: TCP
+                  port: 9998
+            # deny all egress communication
 ###
 # ! the PostgreSQL cluster should be created using the [cnpg](https://cloudnative-pg.github.io/charts) cluster chart
 # ! additionally to the cluster chart a secret for the cluster user is needed (not for this chart but for cnpg/cluster)

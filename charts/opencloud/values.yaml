@@ -64,7 +64,7 @@ opencloud:
         main:
           image:
             repository: opencloudeu/opencloud-rolling
-            tag: "3.7.0"
+            tag: "5.2.0"
           command: ["/bin/sh"]
           args: ["-c", "opencloud init || true; opencloud server"]
           env:
@@ -281,12 +281,33 @@ opencloud:
             - path: /var/lib/opencloud
               readOnly: false
 
+  # ! configure as needed
+  networkpolicies:
+    main:
+      enabled: true
+      controller: main
+      policyTypes:
+        - Ingress
+        - Egress
+      rules:
+        ingress:
+          - {}
+        egress:
+          - {}
+
 # Tika is used for in text search if enabled
 tika:
   enabled: true
 
   global:
     nameOverride: tika
+
+  defaultPodOptions:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
 
   controllers:
     main:
@@ -324,6 +345,26 @@ tika:
           targetPort: http
           protocol: HTTP
 
+  networkpolicies:
+    main:
+      enabled: true
+      controller: main
+      policyTypes:
+        - Ingress
+        - Egress
+      rules:
+        ingress:
+          # allow communication only from opencloud server pods
+          - from:
+              - podSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: "{{ .Release.Name }}"
+                    app.kubernetes.io/name: server
+            ports:
+              - protocol: TCP
+                port: 9998
+          # deny all egress communication
+
 collaboration:
   # automatically enabled if collabora is enabled
 
@@ -339,7 +380,7 @@ collaboration:
         main:
           image:
             repository: opencloudeu/opencloud-rolling
-            tag: "3.7.0"
+            tag: "5.2.0"
           command: ["/bin/sh"]
           args: ["-c", "opencloud collaboration server"]
           env:
@@ -481,6 +522,20 @@ collaboration:
             - path: /etc/opencloud
               readOnly: false
 
+  # ! configure as needed
+  networkpolicies:
+    main:
+      enabled: true
+      controller: main
+      policyTypes:
+        - Ingress
+        - Egress
+      rules:
+        ingress:
+          - {}
+        egress:
+          - {}
+
 collabora:
   enabled: true
 
@@ -496,7 +551,7 @@ collabora:
         main:
           image:
             repository: collabora/code
-            tag: "25.04.7.2.1"
+            tag: "25.04.9.3.1"
           command: ["/bin/sh"]
           args:
             [
@@ -612,3 +667,17 @@ collabora:
           #           value: "frame-ancestors 'self';"
           #         - name: Strict-Transport-Security
           #           value: "max-age=15552001; includeSubdomains; preload"
+
+  # ! configure as needed
+  networkpolicies:
+    main:
+      enabled: true
+      controller: main
+      policyTypes:
+        - Ingress
+        - Egress
+      rules:
+        ingress:
+          - {}
+        egress:
+          - {}

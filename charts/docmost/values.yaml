@@ -41,6 +41,13 @@ docmost:
   global:
     nameOverride: server
 
+  defaultPodOptions:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+
   controllers:
     main:
       type: deployment
@@ -50,7 +57,7 @@ docmost:
         main:
           image:
             repository: docmost/docmost
-            tag: "0.23.2"
+            tag: "0.70.3"
             pullPolicy: IfNotPresent
           env:
             DISABLE_TELEMETRY: "{{ .Values.DISABLE_TELEMETRY }}"
@@ -61,6 +68,7 @@ docmost:
             MAIL_DRIVER: "{{ .Values.MAIL_DRIVER }}"
             SMTP_HOST: "{{ .Values.SMTP_HOST }}"
             SMTP_PORT: "{{ .Values.SMTP_PORT }}"
+            SMTP_USERNAME: "{{ .Values.SMTP_USERNAME }}"
             SMTP_PASSWORD:
               valueFrom:
                 secretKeyRef:
@@ -139,7 +147,7 @@ docmost:
               service:
                 identifier: main
       tls:
-        - secreetName: "{{ .Release.Name }}-cert"
+        - secretName: "{{ .Release.Name }}-cert"
           hosts:
             - "{{ .Values.DOMAIN }}"
 
@@ -195,11 +203,32 @@ docmost:
             - path: /app/data/storage
               readOnly: false
 
+  # ! configure as needed
+  networkpolicies:
+    main:
+      enabled: true
+      controller: main
+      policyTypes:
+        - Ingress
+        - Egress
+      rules:
+        ingress:
+          - {}
+        egress:
+          - {}
+
 valkey:
   enabled: true
 
   global:
     nameOverride: valkey
+
+  defaultPodOptions:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
 
   controllers:
     main:
@@ -210,7 +239,7 @@ valkey:
         main:
           image:
             repository: valkey/valkey
-            tag: "9.0-alpine"
+            tag: "9.1-alpine"
             pullPolicy: IfNotPresent
           ports:
             - name: redis
@@ -284,6 +313,26 @@ valkey:
       accessMode: ReadWriteOnce
       # ! set `storageClass` if not the default provider should be used
       # storageClass: storage-provider-name
+
+  networkpolicies:
+    main:
+      enabled: true
+      controller: main
+      policyTypes:
+        - Ingress
+        - Egress
+      rules:
+        ingress:
+          # allow communication only from docmost server pods
+          - from:
+              - podSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: "{{ .Release.Name }}"
+                    app.kubernetes.io/name: server
+            ports:
+              - protocol: TCP
+                port: 6379
+          # deny all egress communication
 ###
 # ! the PostgreSQL cluster should be created using the [cnpg](https://cloudnative-pg.github.io/charts) cluster chart
 # ! additionally to the cluster chart a secret for the cluster user is needed (not for this chart but for cnpg/cluster)

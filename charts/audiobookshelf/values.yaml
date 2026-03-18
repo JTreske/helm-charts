@@ -12,6 +12,13 @@ audiobookshelf:
   global:
     nameOverride: server
 
+  defaultPodOptions:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+
   controllers:
     main:
       type: deployment
@@ -21,7 +28,7 @@ audiobookshelf:
         main:
           image:
             repository: ghcr.io/advplyr/audiobookshelf
-            tag: "2.30.0"
+            tag: "2.33.0"
             pullPolicy: IfNotPresent
           env:
             TZ: Europe/Berlin
@@ -67,7 +74,7 @@ audiobookshelf:
               service:
                 identifier: main
       tls:
-        - secreetName: "{{ .Release.Name }}-cert"
+        - secretName: "{{ .Release.Name }}-cert"
           hosts:
             - "{{ .Values.DOMAIN }}"
 
@@ -154,3 +161,17 @@ audiobookshelf:
           main:
             - path: /media
               readOnly: true
+
+  # ! configure as needed
+  networkpolicies:
+    main:
+      enabled: true
+      controller: main
+      policyTypes:
+        - Ingress
+        - Egress
+      rules:
+        ingress:
+          - {}
+        egress:
+          - {}

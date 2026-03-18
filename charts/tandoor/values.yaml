@@ -41,7 +41,7 @@ tandoor:
         main:
           image:
             repository: vabene1111/recipes
-            tag: "2.3.5"
+            tag: "2.5.3"
             pullPolicy: IfNotPresent
           env:
             TZ: Europe/Berlin
@@ -129,7 +129,7 @@ tandoor:
               service:
                 identifier: main
       tls:
-        - secreetName: "{{ .Release.Name }}-cert"
+        - secretName: "{{ .Release.Name }}-cert"
           hosts:
             - "{{ .Values.DOMAIN }}"
 
@@ -200,6 +200,20 @@ tandoor:
           main:
             - path: /opt/recipes/mediafiles
               readOnly: false
+
+  # ! configure as needed
+  networkpolicies:
+    main:
+      enabled: true
+      controller: main
+      policyTypes:
+        - Ingress
+        - Egress
+      rules:
+        ingress:
+          - {}
+        egress:
+          - {}
 ###
 # ! the PostgreSQL cluster should be created using the [cnpg](https://cloudnative-pg.github.io/charts) cluster chart
 # ! additionally to the cluster chart a secret for the cluster user is needed (not for this chart but for cnpg/cluster)

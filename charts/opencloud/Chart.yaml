@@ -2,8 +2,8 @@ apiVersion: v2
 name: opencloud
 description: OpenCloud is an open-source file sharing and collaboration solution
 type: application
-version: 0.1.0
-appVersion: "3.7.0"
+version: 0.2.0
+appVersion: "5.2.0"
 dependencies:
   - name: common
     version: 4.3.0

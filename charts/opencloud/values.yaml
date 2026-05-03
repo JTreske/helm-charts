@@ -238,7 +238,8 @@ opencloud:
       # ! set `storageClass` if not the default storage class should be used
       # storageClass: storage-class-name
       # ! set `existingClaim` if you provide the PVC externally
-      # existingClaim: "{{ .Release.Name }}-config-pvc"
+      # ! name must be "{{ .Release.Name }}-<global name override>-config-pvc"
+      # existingClaim: "{{ .Release.Name }}-server-config-pvc"
       accessMode: ReadWriteMany
       size: 1Gi
       retain: true

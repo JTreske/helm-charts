@@ -45,11 +45,12 @@ paperless:
         main:
           image:
             repository: ghcr.io/paperless-ngx/paperless-ngx
-            tag: "2.20.11"
+            tag: "3.2.1"
             pullPolicy: IfNotPresent
           env:
             PAPERLESS_URL: "{{ .Values.APP_URL }}"
             PAPERLESS_REDIS: redis://{{ .Release.Name }}:6379
+            PAPERLESS_DBENGINE: postgresql
             PAPERLESS_DBHOST: "{{ .Values.DB_HOSTNAME }}"
             PAPERLESS_TIKA_ENABLED: 1
             PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://{{ .Release.Name }}:3000

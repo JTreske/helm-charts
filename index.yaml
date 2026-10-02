@@ -227,6 +227,24 @@ entries:
   paperless:
   - apiVersion: v2
     appVersion: 2.20.11
+    created: "2026-10-02T18:51:05.917807939Z"
+    dependencies:
+    - name: common
+      repository: https://bjw-s-labs.github.io/helm-charts/
+      version: 4.3.0
+    description: Paperless-ngx is a community-supported open-source document management
+      system that transforms your physical documents into a searchable online archive
+      so you can keep, well, less paper.
+    digest: 40b16650d188b1b920ab8b71fcd8fb2bf912c8fb4ef62e4ff6ca99392b0fe00b
+    maintainers:
+    - name: JTreske
+    name: paperless
+    type: application
+    urls:
+    - https://github.com/JTreske/helm-charts/releases/download/paperless-0.3.1/paperless-0.3.1.tgz
+    version: 0.3.1
+  - apiVersion: v2
+    appVersion: 2.20.11
     created: "2026-03-18T21:23:46.091945998Z"
     dependencies:
     - name: common
@@ -331,4 +349,4 @@ entries:
     urls:
     - https://github.com/JTreske/helm-charts/releases/download/tandoor-0.1.0/tandoor-0.1.0.tgz
     version: 0.1.0
-generated: "2026-03-18T21:23:46.309517415Z"
+generated: "2026-10-02T18:51:05.917867461Z"
